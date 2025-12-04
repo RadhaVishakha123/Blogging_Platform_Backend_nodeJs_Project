@@ -3,7 +3,7 @@ async function handleAddUserProfile(req,res) {
     try{const userId=req.body.userId;
       let imagePath = null;
     if (req.file) {
-      imagePath = `/uploads/${req.file.filename}`;
+      imagePath = `/user_ProfilePic_uploads/${req.file.filename}`;
     }
 if(!userId) return res.status(400).json({ message: "UserId required" });
 const data={
