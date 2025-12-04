@@ -22,7 +22,7 @@ export interface UserProfile {
   userId: string;
   fullName: string;
   bio: string;
-  profilePic: string;
+  profilePic: any;
   accountType: "public" | "private";
 }
 export interface UserPost {
