@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const User = require("../models/auth");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
 const RefreshToken = require("..//models/refreshToken");

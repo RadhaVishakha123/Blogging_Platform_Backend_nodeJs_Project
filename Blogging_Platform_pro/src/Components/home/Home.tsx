@@ -26,7 +26,8 @@ export default function Home() {
     setselectedPost(post);
     setCommentText("");
   }
-  const loggedInUserId = currentLoggedInUserData?.user._id ?? "";
+  const loggedInUserId = currentLoggedInUserData?.user.id ?? "";
+  console.log("home page current user id:",loggedInUserId);
   const [refreshLikes, setRefreshLikes] = useState(false);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);

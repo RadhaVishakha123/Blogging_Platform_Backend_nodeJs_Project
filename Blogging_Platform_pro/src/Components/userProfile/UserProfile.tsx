@@ -33,24 +33,16 @@ export default function UserProfile() {
       JSON.parse(localStorage.getItem("userPostCommentData") ?? "[]") || []
     );
   });
+
   const message = App.useApp().message;
   const { currentLoggedInUserData } = useUser();
   const [isProfileModelOpen, setIsProfileModelOpen] = useState<boolean>(false);
   const userPostLikeData =
     JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
-  //   const {
-  //     fetchPostData,
-  //     followUser,
-  //     unfollowUser,
-  //     userFollowData,
-  //     checkIsFollowing,
-  //     setUserProfileData,
-  //     userProfileData
-  //   } = useUserProfile();
   const [userProfileData, setUserProfileData] = useState<UserProfile[]>(() => {
     return JSON.parse(localStorage.getItem("userProfileData") ?? "[]") || [];
   });
-  const loggedInUserId = currentLoggedInUserData?.user._id ?? "";
+  const loggedInUserId = currentLoggedInUserData?.user.id ?? "";
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [userDetails, setUserDetails] = useState<any>(null);
   const [userPosts, setUserPosts] = useState<any[]>([]);
@@ -75,12 +67,15 @@ export default function UserProfile() {
     userId?: string;
     username?: string;
   };
-  const profileUserId = state?.userId ??currentLoggedInUserData?.user._id ; // Use clicked user or current user
-  const profileUsername = state?.username || currentLoggedInUserData?.user.username;
+  const profileUserId = state?.userId ?? currentLoggedInUserData?.user.id; // Use clicked user or current user
+  const profileUsername =
+    state?.username || currentLoggedInUserData?.user.username;
   const [isFollowing, setIsFollowing] = useState<boolean>(
-    checkIsFollowing(currentLoggedInUserData?.user._id  || "", profileUserId || "")
+    checkIsFollowing(
+      currentLoggedInUserData?.user.id || "",
+      profileUserId || ""
+    )
   );
-
   const FollowerCount =
     userFollowerData?.find(
       (follow: UserFollower) => follow.userId === profileUserId
@@ -102,45 +97,74 @@ export default function UserProfile() {
   // ---------------------------
   // ADD USER PROFILE
   // ---------------------------
-  function addUserProfile(data: Omit<UserProfile, "userId">): boolean {
-    const uid = currentLoggedInUserData?.user._id ;
-    if (!uid) return false;
-    const newUser: UserProfile = {
-      userId: uid,
-      fullName: data.fullName,
-      bio: data.bio,
-      profilePic: data.profilePic,
-      accountType: data.accountType,
-    };
-    const exists = userProfileData.some((u) => u.userId === uid);
-    if (exists) {
-      // UPDATE EXISTING PROFILE
-      setUserProfileData((prev) =>
-        prev.map((u) => (u.userId === uid ? newUser : u))
-      );
-    } else {
-      // ADD NEW USER PROFILE
-      setUserProfileData((prev) => [...prev, newUser]);
-    }
+  async function addUserProfile(
+    data: Omit<UserProfile, "userId">
+  ): Promise<boolean> {
+    const userId = currentLoggedInUserData?.user.id;
+    if (!userId) return false;
+    // const newUser: UserProfile = {
+    //   userId: uid,
+    //   fullName: data.fullName,
+    //   bio: data.bio,
+    //   profilePic: data.profilePic,
+    //   accountType: data.accountType,
+    // };
+    // const exists = userProfileData.some((u) => u.userId === uid);
+    // if (exists) {
+    //   // UPDATE EXISTING PROFILE
+    //   setUserProfileData((prev) =>
+    //     prev.map((u) => (u.userId === uid ? newUser : u))
+    //   );
+    // } else {
+    //   // ADD NEW USER PROFILE
+    //   setUserProfileData((prev) => [...prev, newUser]);
+    // }
+    // return true;
+    const formData = new FormData();
+  formData.append("userId", userId);
+  formData.append("fullName", data.fullName);
+  formData.append("bio", data.bio);
+  formData.append("accountType", data.accountType);
+formData.append("profilePic", data.profilePic); 
+    const response = await fetch("http://localhost:8000/api/userprofile/add", {
+      method: "post",
+      headers: {
+        Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+      },
+      body: formData,
+    });
+    const result = await response.json();
+    if (result.message !== "Success") return false;
     return true;
   }
 
   // ---------------------------
   // FETCH PROFILE
   // ---------------------------
-  function fetchUserProflile(userId: string): UserProfile {
-    const user = userProfileData.find((u) => u.userId === userId);
+  async function fetchUserProflile(userId: string): Promise<UserProfile> {
+    const response = await fetch(
+      `http://localhost:8000/api/userprofile/fetch?userId=${userId}`,
+      {
+        method: "get",
+        headers: {
+          Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+        },
+      }
+    );
+    const result = await response.json();
+    return result.profile;
+    // const user = userProfileData.find((u) => u.userId === userId);
 
-    if (!user) {
-      return {
-        userId,
-        fullName: "",
-        bio: "",
-        profilePic: "",
-        accountType: "public",
-      };
-    }
-    return user;
+    // if (!user) {
+    //   return {
+    //     userId,
+    //     fullName: "",
+    //     bio: "",
+    //     profilePic: "",
+    //     accountType: "public",
+    //   };
+    // }
+    // return user;
   }
   function fetchPostData(profileUserId: string) {
     const postData: UserPost[] =
@@ -164,7 +188,7 @@ export default function UserProfile() {
   //   if (!userDetails) return null;
 
   const isPrivate = userDetails?.accountType === "private";
-  const isOwner = currentLoggedInUserData?.user._id  === profileUserId;
+  const isOwner = currentLoggedInUserData?.user.id === profileUserId;
 
   // TEMP DATA (for input editing)
   const [tempData, setTempData] = useState<Omit<UserProfile, "userId">>({
@@ -229,47 +253,58 @@ export default function UserProfile() {
   }
 
   useEffect(() => {
-    if (isProfileModelOpen && currentLoggedInUserData) {
-      const profile = fetchUserProflile(currentLoggedInUserData?.user._id );
-      setTempData({
-        fullName: profile.fullName,
-        bio: profile.bio,
-        profilePic: profile.profilePic,
-        accountType: profile.accountType,
-      });
-    }
+    (async () => {
+      if (isProfileModelOpen && currentLoggedInUserData) {
+        console.log(
+          "userId (send in fetch function):",
+          currentLoggedInUserData?.user.id
+        );
+        const profile = await fetchUserProflile(
+          currentLoggedInUserData?.user.id
+        );
+        setTempData({
+          fullName: profile.fullName,
+          bio: profile.bio,
+          profilePic: profile.profilePic,
+          accountType: profile.accountType,
+        });
+      }
+    })();
   }, [isProfileModelOpen]);
   useEffect(() => {
-    if (!imageFile || profileUserId !==currentLoggedInUserData?.user._id ) return;
+    if (!imageFile || profileUserId !== currentLoggedInUserData?.user.id)
+      return;
 
     (async () => {
-      const imageUrl = await fileToBase64(imageFile);
+      //const imageUrl = await fileToBase64(imageFile);
       addUserProfile({
         fullName: userDetails?.fullName || "",
         bio: userDetails?.bio || "",
-        profilePic: imageUrl,
+        profilePic: imageFile,
         accountType: userDetails?.accountType || "public",
       });
     })();
   }, [imageFile]);
   useEffect(() => {
     if (!profileUserId) return;
+    (async () => {
+      const profile = await fetchUserProflile(profileUserId);
+      setUserDetails(profile);
 
-    const profile = fetchUserProflile(profileUserId);
-    setUserDetails(profile);
+      const posts = await fetchPostData(profileUserId);
+      console.log("userdataaaa:", posts);
+      setUserPosts(posts);
+    })();
+  }, [profileUserId]);
 
-    const posts = fetchPostData(profileUserId);
-    console.log("userdataaaa:", posts);
-    setUserPosts(posts);
-  }, [profileUserId, userProfileData]);
-
-  useEffect(() => {
-    localStorage.setItem("userProfileData", JSON.stringify(userProfileData));
-  }, [userProfileData]);
+ 
 
   useEffect(() => {
     setIsFollowing(
-      checkIsFollowing(currentLoggedInUserData?.user._id || "", profileUserId || "")
+      checkIsFollowing(
+        currentLoggedInUserData?.user.id || "",
+        profileUserId || ""
+      )
     );
   }, [refreshFollow, profileUserId]);
 
@@ -310,7 +345,7 @@ export default function UserProfile() {
         <div className="flex flex-col">
           <Avatar
             size={110}
-            src={userDetails.profilePic ? userDetails.profilePic : Default_User}
+            src={userDetails.profilePic ? `http://localhost:8000${userDetails.profilePic}` : Default_User}
             className="border-4 border-gray-700"
           />
           {isOwner && (
@@ -372,7 +407,7 @@ export default function UserProfile() {
             onClick={() => {
               if (isFollowing) {
                 const result = unfollowUser(
-                  currentLoggedInUserData?.user._id ,
+                  currentLoggedInUserData?.user.id,
                   profileUserId!
                 );
                 setUserFollowerData(result.userFollowerData);
@@ -380,7 +415,7 @@ export default function UserProfile() {
                 setRefreshFollow((prev) => !prev);
               } else {
                 const result = followUser(
-                  currentLoggedInUserData?.user._id ,
+                  currentLoggedInUserData?.user.id,
                   profileUserId!
                 );
                 setUserFollowerData(result.userFollowerData);
@@ -524,12 +559,18 @@ export default function UserProfile() {
                 <div>
                   <Button
                     type={
-                      checkIsFollowing(currentLoggedInUserData?.user._id , item.userId)
+                      checkIsFollowing(
+                        currentLoggedInUserData?.user.id,
+                        item.userId
+                      )
                         ? "default"
                         : "primary"
                     }
                     className={`${
-                      checkIsFollowing(currentLoggedInUserData?.user._id , item.userId)
+                      checkIsFollowing(
+                        currentLoggedInUserData?.user.id,
+                        item.userId
+                      )
                         ? "bg-gray-800 text-white border-gray-700"
                         : "bg-blue-600 hover:bg-blue-700 border-none"
                     }`}
@@ -537,17 +578,17 @@ export default function UserProfile() {
                       let result;
                       if (
                         checkIsFollowing(
-                          currentLoggedInUserData?.user._id ,
+                          currentLoggedInUserData?.user.id,
                           item.userId
                         )
                       ) {
                         result = unfollowUser(
-                          currentLoggedInUserData?.user._id ,
+                          currentLoggedInUserData?.user.id,
                           item.userId
                         );
                       } else {
                         result = followUser(
-                          currentLoggedInUserData?.user._id ,
+                          currentLoggedInUserData?.user.id,
                           item.userId
                         );
                       }
@@ -592,11 +633,13 @@ export default function UserProfile() {
                       setRefreshFollow((prev) => !prev);
                     }}
                   >
-                    {checkIsFollowing(currentLoggedInUserData?.user._id , item.userId)
+                    {checkIsFollowing(
+                      currentLoggedInUserData?.user.id,
+                      item.userId
+                    )
                       ? "Unfollow"
                       : "Follow"}
                   </Button>
-          
                 </div>
               </div>
             ))
