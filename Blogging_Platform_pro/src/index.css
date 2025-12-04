@@ -1,0 +1,12 @@
+@import "tailwindcss";
+/* Remove default white background */
+.custom-modal .ant-modal-content {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Optional: remove padding */
+.custom-modal .ant-modal-body {
+  padding: 0 !important;
+}
+/* 
