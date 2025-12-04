@@ -3,12 +3,12 @@ const express = require("express");
 const cors = require("cors");
 const connectDB=require("./config/db");
 const cookieParser=require("cookie-parser")
-const refreshaccessRoutes=require("./routes/refreshaccessRouter")
-const authRoutes=require("./routes/authRoutes")
-const userProfileRouter=require("./routes/userProfileRouter");
+const refreshaccessRoute=require("./routes/refreshaccessRoute")
+const authRoute=require("./routes/authRoute")
+const userProfileRoute=require("./routes/userProfileRoute");
 const app = express();
 const {authMiddleware}=require("./middlewares/authMiddleware")
-
+const postRoute=require("./routes/postRoute")
 // database connect
 connectDB();
 
@@ -21,11 +21,13 @@ app.use(express.urlencoded({ extended: true }))
 //cookie parse
 app.use(cookieParser());
 //Make the uploads folder public, and allow files inside it to be accessed through the URL /uploads/...
-app.use('/uploads',express.static("uploads"))
+app.use('/user_ProfilePic_uploads',express.static("user_ProfilePic_uploads"))
+app.use('/user_PostImage_uploads',express.static("user_PostImage_uploads"))
 // routes
-app.use("/api/auth", authRoutes);
-app.use("/api/auth/refresh",refreshaccessRoutes);
-app.use("/api/userprofile",authMiddleware,userProfileRouter);
+app.use("/api/auth", authRoute);
+app.use("/api/auth/refresh",refreshaccessRoute);
+app.use("/api/userprofile",authMiddleware,userProfileRoute);
+app.use("/api/userpost",postRoute);
 // server
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);

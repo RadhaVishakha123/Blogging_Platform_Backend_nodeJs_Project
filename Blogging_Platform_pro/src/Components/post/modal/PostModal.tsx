@@ -1,39 +1,40 @@
 import { Modal, Input, Upload, Button } from "antd";
 import { UploadOutlined, DeleteOutlined } from "@ant-design/icons";
 import useUser from "../../../hooks/useUser";
-import { fileToBase64 } from "../../../Helper/utility";
 import { useEffect, useState } from "react";
 import type { PostPopupProps, UserPost } from "../../../Helper/Type";
-import { nanoid } from "nanoid";
 import { App } from "antd";
 export default function PostModal({
   isModalOpen,
   setIsModalOpen,
 }: PostPopupProps) {
   const { currentLoggedInUserData } = useUser();
-  const [imageFile, setImageFile] = useState<File | null>();
+  const [postImage, setPostImage] = useState<File | null>();
   const [caption, setCaption] = useState("");
-  const [userPostData, setUserPostData] = useState<UserPost[]>(() => {
-    return JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
-  });
   const message = App.useApp().message;
-  function addPostData(postData: any) {
-    const uid = currentLoggedInUserData?.id;
-    if (!uid) return false;
-    const postId = nanoid(10);
-    const newPost: UserPost = {
-      postId,
-      userId: uid,
-      content: postData.content,
-      imageUrl: postData.imageUrl,
-      createdAt: new Date(),
-    };
-    setUserPostData((prev) => [newPost, ...prev]);
-    message.success("Post added successfully!");
-  }
+ async function addPostData(postData: any) {
+  const uid = currentLoggedInUserData?.user.id;
+  if (!uid) return false;
+
+  const formData = new FormData();
+  formData.append("userId", uid);
+  formData.append("content", postData.content);
+  formData.append("postImage", postData.postImage);   // SAME NAME AS MULTER
+  const response = await fetch("http://localhost:8000/api/userpost", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+    },
+    body: formData, // 
+  });
+
+  const result = await response.json();
+  return result.message === "Success";
+}
+
   const uploadProps = {
     beforeUpload: (file: any) => {
-      setImageFile(file);
+      setPostImage(file);
       return false; // prevent auto-upload
     },
     accept: "image/*",
@@ -44,40 +45,32 @@ export default function PostModal({
   // ----------------- SUBMIT POST -----------------
   async function handleSubmit() {
     if (!currentLoggedInUserData) return;
-    let imageUrl = "";
-    if (!imageFile) {
+    if (!postImage) {
       message.warning("Please upload an image to continue.");
     }
-    // else if(caption==""){
-    //   message.warning("A caption is required to create this post.")
-    // }
-    else if (imageFile) {
-      imageUrl = await fileToBase64(imageFile);
-
-      addPostData({
-        content: caption,
-        imageUrl,
-      });
-      // setActiveAction("Profile");
-      setCaption("");
-      setImageFile(null);
-      setIsModalOpen(false);
+    else if (postImage) {
+     const isSuccess = await addPostData({
+    content: caption,
+    postImage,
+  });
+  if (isSuccess) {
+    message.success("Post created");
+    setCaption("");
+    setPostImage(null);
+    setIsModalOpen(false);
+  }
     }
   }
-  useEffect(() => {
-    localStorage.setItem("userPostData", JSON.stringify(userPostData));
-  }, [userPostData]);
-
   return (
     <>
       <Modal
         open={isModalOpen}
         footer={null}
         onCancel={() => {
-          setImageFile(null);
+          setPostImage(null);
           setCaption("");
           setIsModalOpen(false);
-          // setActiveAction("Profile");
+          
         }}
         centered
         rootClassName="custom-modal"
@@ -110,10 +103,10 @@ export default function PostModal({
           </Upload>
 
           {/* IMAGE PREVIEW */}
-          {imageFile && (
+          {postImage && (
             <div className="relative mb-4">
               <img
-                src={URL.createObjectURL(imageFile)}
+                src={URL.createObjectURL(postImage)}
                 alt="preview"
                 className="w-full h-64 object-contain rounded-xl border border-white/20"
               />
@@ -122,7 +115,7 @@ export default function PostModal({
                 danger
                 className="absolute top-3 right-3 !bg-black/70 !text-white !border-none !rounded-full"
                 icon={<DeleteOutlined />}
-                onClick={() => setImageFile(null)}
+                onClick={() => setPostImage(null)}
               />
             </div>
           )}
