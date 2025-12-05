@@ -70,6 +70,7 @@ export default function UserProfile() {
   const profileUserId = state?.userId ?? currentLoggedInUserData?.user.id; // Use clicked user or current user
   const profileUsername =
     state?.username || currentLoggedInUserData?.user.username;
+    console.log("usernmae:", profileUsername);
   const [isFollowing, setIsFollowing] = useState<boolean>(
     checkIsFollowing(
       currentLoggedInUserData?.user.id || "",
@@ -166,21 +167,37 @@ formData.append("profilePic", data.profilePic);
     // }
     // return user;
   }
-  function fetchPostData(profileUserId: string) {
-    const postData: UserPost[] =
-      JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
+  async function fetchPostData(profileUserId: string) {
+    const response = await fetch(
+        `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+          },
+        }
+      );
 
-    //  use state variable, not reloaded storage variable
-    const user = userProfileData.find((u: any) => u.userId === profileUserId);
+      const result = await response.json();
+      console.log("user profile post data:",result);
 
-    return postData
-      .filter((post) => post.userId === profileUserId)
-      .map((post) => ({
-        ...post,
-        fullName: user?.fullName || "Unknown User",
-        profilePic: user?.profilePic || null,
-        accountType: user?.accountType || "public",
-      }));
+      // API returns { message, data: posts }
+      const merged = result.data || [];
+      return merged;
+    // const postData: UserPost[] =
+    //   JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
+
+    // //  use state variable, not reloaded storage variable
+    // const user = userProfileData.find((u: any) => u.userId === profileUserId);
+
+    // return postData
+    //   .filter((post) => post.userId === profileUserId)
+    //   .map((post) => ({
+    //     ...post,
+    //     fullName: user?.fullName || "Unknown User",
+    //     profilePic: user?.profilePic || null,
+    //     accountType: user?.accountType || "public",
+    //   }));
   }
 
   if (!currentLoggedInUserData)
