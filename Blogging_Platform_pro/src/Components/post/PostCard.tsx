@@ -27,11 +27,17 @@ export default function PostCard({ post, onCommentClick }: any) {
   // --------------------------
   // SAFE DEFAULTS
   // --------------------------
-  const profilePic = post?.profilePic ?? Default_User;
-  const imageUrl = post?.imageUrl ?? null;
+  let profilePic:any;
+  if(post.profilePic == null){
+     profilePic=Default_User;
+  }
+  else{
+   profilePic =`http://localhost:8000${post?.profilePic }`;
+  }
+  const postImage = `http://localhost:8000${post.postImage}`;
   const fullName = post?.fullName ?? "Unknown User";
   const content = post?.content ?? "";
-  const postId = post?.postId ?? "";
+  const postId = post?._id ?? "";
   const createdAt = post?.createdAt ?? new Date().toISOString();
 
   if (!post) return null; // <- Safety guard
@@ -49,9 +55,9 @@ const clickbtn = ()=>{
       </div>
 
       {/* Post Image */}
-      {imageUrl && (
+      { postImage && (
         <img
-          src={imageUrl}
+          src={postImage}
           alt="Post"
           className="rounded-lg w-full max-h-[450px] object-cover mb-4"
         />
