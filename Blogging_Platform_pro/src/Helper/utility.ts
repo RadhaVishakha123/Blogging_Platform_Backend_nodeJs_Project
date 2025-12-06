@@ -92,8 +92,18 @@ export function postLikeCount(
     return count + likesForThisPost;
   }, 0);
 }
-export function getUserDetails(userid: string) {
-    return userProfileData.find((u: any) => u.userId == userid);
+export async function getUserDetails(userId: string,accessToken:string) {
+  const response = await fetch(
+      `http://localhost:8000/api/userprofile/fetch?userId=${userId}`,
+      {
+        method: "get",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    const result = await response.json();
+    return result.profile;
   }
  export function formatPostDate(date: string) {
   const postDate = moment(date);
@@ -106,40 +116,64 @@ export function getUserDetails(userid: string) {
   // Else → "12 October 2015"
   return postDate.format("DD MMMM YYYY");
 }
-export function addComment(postId: string, comment: string, currentUserId: string,userPostCommentData:UserPostComment[]) {
-
-  const loggedInUserId = currentUserId;
-
-  const existingUser = userPostCommentData.find(
-    (data:any) => data.userId === loggedInUserId
-  );
-
-  if (!existingUser) {
-    // add new user comment data
-    const newUserComment: UserPostComment = {
-      userId: loggedInUserId,
-      comments: [
-        { postId, userId: loggedInUserId, comment,createdAt:new Date() }
-      ]
-    };
-
-    userPostCommentData.push(newUserComment);
-  } else {
-    // update existing user comment list
-    existingUser.comments.push({
+export async function addComment(postId: string, comment: string, currentUserId: string,accessToken:string) {
+  
+  const response = await fetch("http://localhost:8000/api/comment", {
+      method: "post",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
       postId,
-      userId: loggedInUserId,
-      comment,
-      createdAt:new Date() 
+      userId: currentUserId,
+      comment
+    }),
     });
-  }
+    const result = await response.json();
+return result.data;
+  // const loggedInUserId = currentUserId;
 
-  // ✅ Save back to localStorage
-  localStorage.setItem(
-    "userPostCommentData",
-    JSON.stringify(userPostCommentData)
-  );
-  return userPostCommentData;
+  // const existingUser = userPostCommentData.find(
+  //   (data:any) => data.userId === loggedInUserId
+  // );
+
+  // if (!existingUser) {
+  //   // add new user comment data
+  //   const newUserComment: UserPostComment = {
+  //     userId: loggedInUserId,
+  //     comments: [
+  //       { postId, userId: loggedInUserId, comment,createdAt:new Date() }
+  //     ]
+  //   };
+
+  //   userPostCommentData.push(newUserComment);
+  // } else {
+  //   // update existing user comment list
+  //   existingUser.comments.push({
+  //     postId,
+  //     userId: loggedInUserId,
+  //     comment,
+  //     createdAt:new Date() 
+  //   });
+  // }
+
+  // // ✅ Save back to localStorage
+  // localStorage.setItem(
+  //   "userPostCommentData",
+  //   JSON.stringify(userPostCommentData)
+  // );
+  // return userPostCommentData;
+}
+export async function fetchComments(postId: string,accessToken:string) {
+  const response = await fetch(`http://localhost:8000/api/comment/?postId=${postId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  const result = await response.json();
+  return result.data || []; // assuming API returns { data: [...] }
 }
 
 export function toggleLike(postId: string, currentUserId: string,userPostLikeData:UserPostLike[]) {

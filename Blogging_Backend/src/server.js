@@ -9,6 +9,7 @@ const userProfileRoute=require("./routes/userProfileRoute");
 const app = express();
 const {authMiddleware}=require("./middlewares/authMiddleware")
 const postRoute=require("./routes/postRoute")
+const commentRoute=require("./routes/commentRoute")
 // database connect
 connectDB();
 
@@ -27,7 +28,8 @@ app.use('/user_PostImage_uploads',express.static("user_PostImage_uploads"))
 app.use("/api/auth", authRoute);
 app.use("/api/auth/refresh",refreshaccessRoute);
 app.use("/api/userprofile",authMiddleware,userProfileRoute);
-app.use("/api/userpost",postRoute);
+app.use("/api/userpost",authMiddleware,postRoute);
+app.use("/api/comment",commentRoute);
 // server
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
