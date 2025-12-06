@@ -23,7 +23,8 @@ import type {
 
 export default function Home() {
   const { currentLoggedInUserData } = useUser();
-  if(!currentLoggedInUserData) return null;
+   if (!currentLoggedInUserData)
+  return <div className="text-white text-center p-5">Loading...</div>;
   const accessToken=currentLoggedInUserData.accessToken;
   const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
