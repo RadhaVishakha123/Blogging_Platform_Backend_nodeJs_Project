@@ -4,11 +4,13 @@ import useUser from "../../hooks/useUser";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Default_User from "../../assets/Default_User.jpg";
-
+import { useRecoilValue } from "recoil";
+import { postRefreshAtom } from "../../recoil/atoms/postRefreshAtom";
 import CommentModal from "../comment/CommentModal";
-import { addComment,fetchComments } from "../../Helper/utility";
+import { addComment, fetchComments } from "../../Helper/utility";
 import { App } from "antd";
 import type { UserPostComment, UserPostLike } from "../../Helper/Type";
+
 import type {
   UserProfile,
   UserFollowing,
@@ -26,11 +28,11 @@ import {
 import PostCard from "../post/PostCard";
 
 export default function UserProfile() {
-  
-
   const message = App.useApp().message;
   const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const { currentLoggedInUserData } = useUser();
+  if (!currentLoggedInUserData)
+    return <div className="text-white text-center p-5">Loading...</div>;
   const [isProfileModelOpen, setIsProfileModelOpen] = useState<boolean>(false);
   const userPostLikeData =
     JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
@@ -51,13 +53,13 @@ export default function UserProfile() {
   const [userFollowingData, setUserFollowingData] = useState<UserFollowing[]>(
     () => JSON.parse(localStorage.getItem("userFollowingData") ?? "[]")
   );
-  if (!currentLoggedInUserData?.accessToken) return;
-  const accessToken = currentLoggedInUserData?.accessToken;
+
+  const accessToken = currentLoggedInUserData?.accessToken ?? "";
 
   const [userFollowerData, setUserFollowerData] = useState<UserFollower[]>(() =>
     JSON.parse(localStorage.getItem("userFollowerData") ?? "[]")
   );
-
+  const postRefresh = useRecoilValue(postRefreshAtom);
   const location = useLocation();
   const state = location.state as {
     from?: string;
@@ -100,24 +102,7 @@ export default function UserProfile() {
   ): Promise<boolean> {
     const userId = currentLoggedInUserData?.user.id;
     if (!userId) return false;
-    // const newUser: UserProfile = {
-    //   userId: uid,
-    //   fullName: data.fullName,
-    //   bio: data.bio,
-    //   profilePic: data.profilePic,
-    //   accountType: data.accountType,
-    // };
-    // const exists = userProfileData.some((u) => u.userId === uid);
-    // if (exists) {
-    //   // UPDATE EXISTING PROFILE
-    //   setUserProfileData((prev) =>
-    //     prev.map((u) => (u.userId === uid ? newUser : u))
-    //   );
-    // } else {
-    //   // ADD NEW USER PROFILE
-    //   setUserProfileData((prev) => [...prev, newUser]);
-    // }
-    // return true;
+
     const formData = new FormData();
     formData.append("userId", userId);
     formData.append("fullName", data.fullName);
@@ -164,6 +149,7 @@ export default function UserProfile() {
     // }
     // return user;q
   }
+
   async function fetchPostData(profileUserId: string) {
     const response = await fetch(
       `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
@@ -251,14 +237,14 @@ export default function UserProfile() {
     setFollowList(mergedList);
     setIsFollowModalOpen(true);
   };
- async function commentHandler(post: any) {
+  async function commentHandler(post: any) {
     console.log("data post", post);
-  
+
     setselectedPost(post);
     setCommentText("");
-    const comments = await fetchComments(post.postId,accessToken); // fetch comments for this post
-  setCommentData(comments); // save to state
-      setIsModalOpen(true);
+    const comments = await fetchComments(post._id, accessToken); // fetch comments for this post
+    setCommentData(comments); // save to state
+    setIsModalOpen(true);
   }
   async function commandAddHandler() {
     if (!commentText.trim()) {
@@ -273,9 +259,9 @@ export default function UserProfile() {
       accessToken
     );
     // Refresh comments
-  const updatedComments = await fetchComments(selectedPost.postId,accessToken);
-  setCommentData(updatedComments);
-    
+    const updatedComments = await fetchComments(selectedPost._id, accessToken);
+    setCommentData(updatedComments);
+
     setIsModalOpen(false);
   }
 
@@ -301,15 +287,18 @@ export default function UserProfile() {
   useEffect(() => {
     if (!imageFile || profileUserId !== currentLoggedInUserData?.user.id)
       return;
-
     (async () => {
-      //const imageUrl = await fileToBase64(imageFile);
       addUserProfile({
         fullName: userDetails?.fullName || "",
         bio: userDetails?.bio || "",
         profilePic: imageFile,
         accountType: userDetails?.accountType || "public",
       });
+      const updatedProfile = await fetchUserProflile(profileUserId);
+      //  Update UI immediately
+      setUserDetails(updatedProfile);
+      console.log("this is runing1 , ...:",imageFile);
+      console.log("this is runing 2, ...:",updatedProfile);
     })();
   }, [imageFile]);
   useEffect(() => {
@@ -334,16 +323,18 @@ export default function UserProfile() {
   }, [refreshFollow, profileUserId]);
 
   // SAVE CHANGES
-  function saveChanges() {
+  async function saveChanges() {
     if (!currentLoggedInUserData) return;
 
-    addUserProfile({
+    await addUserProfile({
       fullName: tempData.fullName,
       bio: tempData.bio,
-      profilePic: tempData.profilePic,
+      profilePic: imageFile || tempData.profilePic,
       accountType: tempData.accountType,
     });
-
+    const updatedProfile = await fetchUserProflile(profileUserId);
+    //  Update UI immediately
+    setUserDetails(updatedProfile);
     setIsProfileModelOpen(false);
   }
   if (!userDetails) {
@@ -352,17 +343,7 @@ export default function UserProfile() {
   if (!profileUserId) {
     return <div className="text-white text-center p-5">User not found</div>;
   }
-  //   useEffect(() => {
-  //   setUserFollowerData(JSON.parse(localStorage.getItem("userFollowerData")??"[]") || []);
-  //   setUserFollowingData(JSON.parse(localStorage.getItem("userFollowingData")??"[]") || []);
-  // }, [refreshFollow]);
 
-  // useEffect(() => {
-  //     localStorage.setItem(
-  //       "userPostCommentData",
-  //       JSON.stringify(userPostCommentData)
-  //     );
-  //   }, [userPostCommentData]);
   return (
     <div className="min-h-screen w-full overflow-hidden bg-black text-white px-4 py-8 mt-10 lg:ml-22 md:ml-22 xl:ml-22 ">
       {/* TOP SECTION */}
@@ -372,7 +353,9 @@ export default function UserProfile() {
             size={110}
             src={
               userDetails.profilePic
-                ? `http://localhost:8000${userDetails.profilePic}`
+                ? `http://localhost:8000${
+                    userDetails.profilePic
+                  }?t=${Date.now()}`
                 : Default_User
             }
             className="border-4 border-gray-700"
@@ -478,9 +461,9 @@ export default function UserProfile() {
           ) : (
             userPosts.map((post: any) => (
               <PostCard
-                key={post.postId}
+                key={post._id}
                 post={post}
-                onCommentClick={commentHandler}
+                onCommentClick={() => commentHandler(post)}
               />
             ))
             // <AllPosts visiblePosts={userPosts} onCommentClick={commentHandler} className="w-full flex-row"/>
