@@ -288,7 +288,7 @@ export default function UserProfile() {
     if (!imageFile || profileUserId !== currentLoggedInUserData?.user.id)
       return;
     (async () => {
-      addUserProfile({
+     await addUserProfile({
         fullName: userDetails?.fullName || "",
         bio: userDetails?.bio || "",
         profilePic: imageFile,
