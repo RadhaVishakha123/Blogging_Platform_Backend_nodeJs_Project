@@ -4,6 +4,8 @@ import useUser from "../../../hooks/useUser";
 import { useEffect, useState } from "react";
 import type { PostPopupProps, UserPost } from "../../../Helper/Type";
 import { App } from "antd";
+import { useSetRecoilState } from "recoil";
+import { postRefreshAtom } from "../../../recoil/atoms/postRefreshAtom";
 export default function PostModal({
   isModalOpen,
   setIsModalOpen,
@@ -12,6 +14,7 @@ export default function PostModal({
   const [postImage, setPostImage] = useState<File | null>();
   const [caption, setCaption] = useState("");
   const message = App.useApp().message;
+  const setPostRefresh=useSetRecoilState(postRefreshAtom)
  async function addPostData(postData: any) {
   const uid = currentLoggedInUserData?.user.id;
   if (!uid) return false;
@@ -58,6 +61,7 @@ export default function PostModal({
     setCaption("");
     setPostImage(null);
     setIsModalOpen(false);
+    setPostRefresh(p=>!p);
   }
     }
   }

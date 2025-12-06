@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 import Default_User from "../../assets/Default_User.jpg";
 
 import CommentModal from "../comment/CommentModal";
-import { addComment } from "../../Helper/utility";
+import { addComment,fetchComments } from "../../Helper/utility";
 import { App } from "antd";
 import type { UserPostComment, UserPostLike } from "../../Helper/Type";
 import type {
@@ -26,15 +26,10 @@ import {
 import PostCard from "../post/PostCard";
 
 export default function UserProfile() {
-  const [userPostCommentData, setUserPostCommentData] = useState<
-    UserPostComment[]
-  >(() => {
-    return (
-      JSON.parse(localStorage.getItem("userPostCommentData") ?? "[]") || []
-    );
-  });
+  
 
   const message = App.useApp().message;
+  const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const { currentLoggedInUserData } = useUser();
   const [isProfileModelOpen, setIsProfileModelOpen] = useState<boolean>(false);
   const userPostLikeData =
@@ -56,6 +51,8 @@ export default function UserProfile() {
   const [userFollowingData, setUserFollowingData] = useState<UserFollowing[]>(
     () => JSON.parse(localStorage.getItem("userFollowingData") ?? "[]")
   );
+  if (!currentLoggedInUserData?.accessToken) return;
+  const accessToken = currentLoggedInUserData?.accessToken;
 
   const [userFollowerData, setUserFollowerData] = useState<UserFollower[]>(() =>
     JSON.parse(localStorage.getItem("userFollowerData") ?? "[]")
@@ -70,7 +67,7 @@ export default function UserProfile() {
   const profileUserId = state?.userId ?? currentLoggedInUserData?.user.id; // Use clicked user or current user
   const profileUsername =
     state?.username || currentLoggedInUserData?.user.username;
-    console.log("usernmae:", profileUsername);
+  console.log("usernmae:", profileUsername);
   const [isFollowing, setIsFollowing] = useState<boolean>(
     checkIsFollowing(
       currentLoggedInUserData?.user.id || "",
@@ -122,11 +119,11 @@ export default function UserProfile() {
     // }
     // return true;
     const formData = new FormData();
-  formData.append("userId", userId);
-  formData.append("fullName", data.fullName);
-  formData.append("bio", data.bio);
-  formData.append("accountType", data.accountType);
-formData.append("profilePic", data.profilePic); 
+    formData.append("userId", userId);
+    formData.append("fullName", data.fullName);
+    formData.append("bio", data.bio);
+    formData.append("accountType", data.accountType);
+    formData.append("profilePic", data.profilePic);
     const response = await fetch("http://localhost:8000/api/userprofile/add", {
       method: "post",
       headers: {
@@ -165,25 +162,25 @@ formData.append("profilePic", data.profilePic);
     //     accountType: "public",
     //   };
     // }
-    // return user;
+    // return user;q
   }
   async function fetchPostData(profileUserId: string) {
     const response = await fetch(
-        `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
-          },
-        }
-      );
+      `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+        },
+      }
+    );
 
-      const result = await response.json();
-      console.log("user profile post data:",result);
+    const result = await response.json();
+    console.log("user profile post data:", result);
 
-      // API returns { message, data: posts }
-      const merged = result.data || [];
-      return merged;
+    // API returns { message, data: posts }
+    const merged = result.data || [];
+    return merged;
     // const postData: UserPost[] =
     //   JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
 
@@ -214,58 +211,71 @@ formData.append("profilePic", data.profilePic);
     profilePic: "",
     accountType: "public",
   });
-  const openFollowerModal = () => {
+  const openFollowerModal = async () => {
     const followerData =
       userFollowerData?.find((f) => f.userId === profileUserId)?.follower || [];
-    const mergedList = followerData.map((id: string) => {
-      const profile = getUserDetails(id);
-      return {
-        userId: id,
-        fullName: profile?.fullName || "Unknown User",
-        profilePic: profile?.profilePic || "",
-      };
-    });
+
+    const mergedList = await Promise.all(
+      followerData.map(async (id: string) => {
+        const profile = await getUserDetails(id, accessToken);
+        return {
+          userId: id,
+          fullName: profile?.fullName || "Unknown User",
+          profilePic: profile?.profilePic || "",
+        };
+      })
+    );
+
     setFollowModalTitle("Followers");
     setFollowList(mergedList);
     setIsFollowModalOpen(true);
   };
-  const openFollowingModal = () => {
+
+  const openFollowingModal = async () => {
     const followingData =
       userFollowingData?.find((f) => f.userId === profileUserId)?.following ||
       [];
 
-    const mergedList = followingData.map((id: string) => {
-      const profile = getUserDetails(id);
-      return {
-        userId: id,
-        fullName: profile?.fullName || "",
-        profilePic: profile?.profilePic || "",
-      };
-    });
+    const mergedList = await Promise.all(
+      followingData.map(async (id: string) => {
+        const profile = await getUserDetails(id, accessToken);
+        return {
+          userId: id,
+          fullName: profile?.fullName || "",
+          profilePic: profile?.profilePic || "",
+        };
+      })
+    );
 
     setFollowModalTitle("Following");
     setFollowList(mergedList);
     setIsFollowModalOpen(true);
   };
-  function commentHandler(post: any) {
+ async function commentHandler(post: any) {
     console.log("data post", post);
-    setIsModalOpen(true);
+  
     setselectedPost(post);
     setCommentText("");
+    const comments = await fetchComments(post.postId,accessToken); // fetch comments for this post
+  setCommentData(comments); // save to state
+      setIsModalOpen(true);
   }
-  function commandAddHandler() {
+  async function commandAddHandler() {
     if (!commentText.trim()) {
       message.warning("Comment cannot be empty");
       return;
     }
     console.log("userid from home:", selectedPost);
-    const updateData = addComment(
+    await addComment(
       selectedPost.postId,
       commentText,
       loggedInUserId,
-      userPostCommentData
+      accessToken
     );
-    setUserPostCommentData(updateData);
+    // Refresh comments
+  const updatedComments = await fetchComments(selectedPost.postId,accessToken);
+  setCommentData(updatedComments);
+    
     setIsModalOpen(false);
   }
 
@@ -314,8 +324,6 @@ formData.append("profilePic", data.profilePic);
     })();
   }, [profileUserId]);
 
- 
-
   useEffect(() => {
     setIsFollowing(
       checkIsFollowing(
@@ -362,7 +370,11 @@ formData.append("profilePic", data.profilePic);
         <div className="flex flex-col">
           <Avatar
             size={110}
-            src={userDetails.profilePic ? `http://localhost:8000${userDetails.profilePic}` : Default_User}
+            src={
+              userDetails.profilePic
+                ? `http://localhost:8000${userDetails.profilePic}`
+                : Default_User
+            }
             className="border-4 border-gray-700"
           />
           {isOwner && (
@@ -591,8 +603,9 @@ formData.append("profilePic", data.profilePic);
                         ? "bg-gray-800 text-white border-gray-700"
                         : "bg-blue-600 hover:bg-blue-700 border-none"
                     }`}
-                    onClick={() => {
+                    onClick={async () => {
                       let result;
+
                       if (
                         checkIsFollowing(
                           currentLoggedInUserData?.user.id,
@@ -609,18 +622,25 @@ formData.append("profilePic", data.profilePic);
                           item.userId
                         );
                       }
+
                       setUserFollowerData(result.userFollowerData);
                       setUserFollowingData(result.userFollowingData);
 
+                      // -----------------------------
+                      // Update FOLLOWERS modal list
+                      // -----------------------------
                       if (followModalTitle === "Followers") {
                         const followerIds =
                           result.userFollowerData.find(
                             (f: any) => f.userId === profileUserId
                           )?.follower || [];
 
-                        setFollowList(
-                          followerIds.map((id: any) => {
-                            const profile = getUserDetails(id);
+                        const mergedFollowers = await Promise.all(
+                          followerIds.map(async (id: any) => {
+                            const profile = await getUserDetails(
+                              id,
+                              accessToken
+                            );
                             return {
                               userId: id,
                               fullName: profile?.fullName || "",
@@ -628,17 +648,25 @@ formData.append("profilePic", data.profilePic);
                             };
                           })
                         );
+
+                        setFollowList(mergedFollowers);
                       }
 
+                      // -----------------------------
+                      // Update FOLLOWING modal list
+                      // -----------------------------
                       if (followModalTitle === "Following") {
                         const followingIds =
                           result.userFollowingData.find(
                             (f: any) => f.userId === profileUserId
                           )?.following || [];
 
-                        setFollowList(
-                          followingIds.map((id: string) => {
-                            const profile = getUserDetails(id);
+                        const mergedFollowing = await Promise.all(
+                          followingIds.map(async (id: string) => {
+                            const profile = await getUserDetails(
+                              id,
+                              accessToken
+                            );
                             return {
                               userId: id,
                               fullName: profile?.fullName || "",
@@ -646,7 +674,10 @@ formData.append("profilePic", data.profilePic);
                             };
                           })
                         );
+
+                        setFollowList(mergedFollowing);
                       }
+
                       setRefreshFollow((prev) => !prev);
                     }}
                   >
@@ -670,7 +701,7 @@ formData.append("profilePic", data.profilePic);
         commentText={commentText}
         setCommentText={setCommentText}
         selectedPost={selectedPost}
-        commentData={userPostCommentData}
+        commentData={commentData}
       />
     </div>
   );
