@@ -11,6 +11,7 @@ const {authMiddleware}=require("./middlewares/authMiddleware")
 const postRoute=require("./routes/postRoute")
 const commentRoute=require("./routes/commentRoute")
 const postLikeRoute=require("./routes/postLikeRoute")
+const searchRoute=require("./routes/searchRoute")
 // database connect
 connectDB();
 
@@ -32,6 +33,7 @@ app.use("/api/userprofile",authMiddleware,userProfileRoute);
 app.use("/api/userpost",authMiddleware,postRoute);
 app.use("/api/comment",authMiddleware,commentRoute);
 app.use("/api/like",authMiddleware,postLikeRoute);
+app.use("/api/search",searchRoute);
 // server
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
