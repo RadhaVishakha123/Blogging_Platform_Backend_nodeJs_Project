@@ -31,7 +31,7 @@ app.use("/api/auth/refresh",refreshaccessRoute);
 app.use("/api/userprofile",authMiddleware,userProfileRoute);
 app.use("/api/userpost",authMiddleware,postRoute);
 app.use("/api/comment",authMiddleware,commentRoute);
-app.use("/api/like",postLikeRoute);
+app.use("/api/like",authMiddleware,postLikeRoute);
 // server
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
