@@ -80,18 +80,7 @@ export function unfollowUser(currentLoggedInUserId: string, profileUserId: strin
   localStorage.setItem("userFollowerData", JSON.stringify(userFollowerData));
   return {userFollowingData, userFollowerData };
 }
-export function postLikeCount(
-  postId: string,
-  allLikes: UserPostLike[]
-) {
-  return allLikes.reduce((count, userEntry) => {
-    const likesForThisPost = userEntry.likes.filter(
-      (l) => l.postId === postId
-    ).length;
 
-    return count + likesForThisPost;
-  }, 0);
-}
 export async function getUserDetails(userId: string,accessToken:string) {
   const response = await fetch(
       `http://localhost:8000/api/userprofile/fetch?userId=${userId}`,
@@ -132,38 +121,7 @@ export async function addComment(postId: string, comment: string, currentUserId:
     });
     const result = await response.json();
 return result.data;
-  // const loggedInUserId = currentUserId;
-
-  // const existingUser = userPostCommentData.find(
-  //   (data:any) => data.userId === loggedInUserId
-  // );
-
-  // if (!existingUser) {
-  //   // add new user comment data
-  //   const newUserComment: UserPostComment = {
-  //     userId: loggedInUserId,
-  //     comments: [
-  //       { postId, userId: loggedInUserId, comment,createdAt:new Date() }
-  //     ]
-  //   };
-
-  //   userPostCommentData.push(newUserComment);
-  // } else {
-  //   // update existing user comment list
-  //   existingUser.comments.push({
-  //     postId,
-  //     userId: loggedInUserId,
-  //     comment,
-  //     createdAt:new Date() 
-  //   });
-  // }
-
-  // // ✅ Save back to localStorage
-  // localStorage.setItem(
-  //   "userPostCommentData",
-  //   JSON.stringify(userPostCommentData)
-  // );
-  // return userPostCommentData;
+  
 }
 export async function fetchComments(postId: string,accessToken:string) {
   const response = await fetch(`http://localhost:8000/api/comment/?postId=${postId}`, {
@@ -176,61 +134,45 @@ export async function fetchComments(postId: string,accessToken:string) {
   return result.data || []; // assuming API returns { data: [...] }
 }
 
-export function toggleLike(postId: string, currentUserId: string,userPostLikeData:UserPostLike[]) {
-  const loggedInUserId = currentUserId;
+export async function toggleLike(postId: string, currentUserId: string,accessToken:string) {
+  const res = await fetch("http://localhost:8000/api/like/toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" ,
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      postId,
+      userId: currentUserId,
+    }),
+  });
+   const data = await res.json();
+   return data.liked;
 
-  const existingUser = userPostLikeData.find(
-    (data: any) => data.userId === loggedInUserId
-  );
 
-  // CASE 1 → First time user likes anything
-  if (!existingUser) {
-    const newUserLike = {
-      userId: loggedInUserId,
-      likes: [{ postId, userId: loggedInUserId }],
-    };
-
-    const updatedData = [...userPostLikeData, newUserLike];
-// setUserPostLikeData(updatedData)
-    localStorage.setItem("userPostLikeData", JSON.stringify(updatedData));
-
-    return updatedData; // VERY IMPORTANT
-  }
-
-  // CASE 2 → User exists → check if liked already
-  const alreadyLiked = existingUser.likes.some(
-    (l: any) => l.postId === postId && l.userId === loggedInUserId
-  );
-
-  let updatedLikes;
-
-  if (alreadyLiked) {
-    // REMOVE LIKE (unlike)
-    updatedLikes = existingUser.likes.filter(
-      (l: any) => !(l.postId === postId && l.userId === loggedInUserId)
-    );
-  } else {
-    // ADD LIKE (like)
-    updatedLikes = [
-      ...existingUser.likes,
-      { postId, userId: loggedInUserId },
-    ];
-  }
-
-  const updatedData = userPostLikeData.map((data: any) =>
-    data.userId === loggedInUserId ? { ...data, likes: updatedLikes } : data
-  );
-  //setUserPostLikeData(updatedData);
-
-  localStorage.setItem("userPostLikeData", JSON.stringify(updatedData));
-
-  return updatedData; // VERY IMPORTANT
 }
 
-  export function isPostLike(postId: string ,currentUserId:string,userPostLikeData:UserPostLike[]): Boolean {
-    const existingUser = userPostLikeData.find(
-      (data: any) => data.userId === currentUserId
-    );
-
-    return existingUser?.likes.some((l: any) => l.postId === postId) || false;
+  export async function isPostLike(postId: string ,currentUserId:string,accessToken:string): Promise<boolean> {
+    const res = await fetch(`http://localhost:8000/api/like/isliked?postId=${postId}&userId=${currentUserId}`, {
+    method: "get",
+    headers: {  
+      Authorization: `Bearer ${accessToken}`,
+    }
+  });
+   const data = await res.json();
+   return data.liked;
+    
   }
+export async function postLikeCount(
+  postId: string,
+  accessToken:string
+) {
+   const res = await fetch(`http://localhost:8000/api/like/count?postId=${postId}`, {
+    method: "get",
+    headers: {  
+      Authorization: `Bearer ${accessToken}`,
+    }
+  });
+   const data = await res.json();
+   return data.count;
+  
+}
