@@ -3,7 +3,7 @@ async function toggleLike(req, res) {
   try {
     const { postId, userId } = req.body;
     if (!postId || !userId) {
-      return res.status(400).json({ message: "postId & userId required" });
+      return res.status(404).json({ message: "postId & userId required" });
     }
     const exit = await PostLikes.findOne({ postId, userId });
     if (exit) {
@@ -23,7 +23,7 @@ async function postLikeCount(req, res) {
     if (!postId ) {
       return res.status(400).json({ message: "postId  required" });
     }
-    const count = PostLikes.countDocuments({ postId });
+    const count =await PostLikes.countDocuments({ postId });
     return res.status(200).json({count});
   } catch (err) {
     console.error(err);
@@ -36,7 +36,7 @@ async function isPostLike(req, res) {
     if (!postId || !userId) {
      return res.status(400).json({ message: "postId & userId required" });
     }
-    const like = PostLikes.findOne({ postId, userId });
+    const like =await PostLikes.findOne({ postId, userId });
     return res.status(200).json({liked:!!like})
   } catch (err) {
     console.error(err);
