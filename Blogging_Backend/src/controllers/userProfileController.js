@@ -1,18 +1,40 @@
 const UserProfile=require("..//models/userProfile");
+const path=require("path")
+const fs = require("fs");
 async function handleAddUserProfile(req,res) {
     try{const userId=req.body.userId;
       let imagePath = null;
     if (req.file) {
-      imagePath = `/uploads/${req.file.filename}`;
+      imagePath = `/user_ProfilePic_uploads/${req.file.filename}`;
     }
 if(!userId) return res.status(400).json({ message: "UserId required" });
+
+let userProfile= await UserProfile.findOne({userId});
+// If updating and old image exists → delete old image
+    if (userProfile && req.file) {
+      if (userProfile.profilePic) {
+        const oldImagePath = path.join(
+          __dirname,
+          "..",
+          userProfile.profilePic
+        );
+
+        // Delete old file safely
+        fs.unlink(oldImagePath, (err) => {
+          if (err) {
+            console.log("Old image delete error:", err);
+          } else {
+            console.log("Old image removed:", oldImagePath);
+          }
+        });
+      }
+    }
 const data={
     fullName: req.body.fullName,
     bio: req.body.bio,
     profilePic: imagePath,
     accountType: req.body.accountType
 };
-let userProfile= await UserProfile.findOne({userId});
 //update
 if(userProfile){
     //Mongoose returns the updated document=>new:true , otherwise this returen the old data before the update
@@ -53,4 +75,5 @@ async function handlefetchUserProfile(req,res) {
   }
 
 }
+
 module.exports={handleAddUserProfile,handlefetchUserProfile}

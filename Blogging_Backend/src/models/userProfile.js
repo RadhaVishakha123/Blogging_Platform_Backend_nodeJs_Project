@@ -9,7 +9,6 @@ const userProfileschema=new mongoose.Schema({
   fullName: {type: String},
   bio: { type: String },
   profilePic: { type: String ,
-    default:`${Default_User}`
   },
   accountType:{type:String,
      enum:["public","private"],

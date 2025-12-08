@@ -3,12 +3,12 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 function generateAccessToken(user) {
     return jwt.sign(
-        { id: user._id, email: user.email },process.env.SECRET,
+        { id: user._id, email: user.email,username:user.username  },process.env.SECRET,
     {expiresIn:"1h"});
 }
 function generateRefreshToken(user) {
     return jwt.sign(
-        { id: user._id, email: user.email },process.env.SECRET,
+        { id: user._id, email: user.email,username:user.username },process.env.SECRET,
         {expiresIn:"7d"}
     );
 }

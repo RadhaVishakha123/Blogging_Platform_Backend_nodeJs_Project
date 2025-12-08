@@ -17,6 +17,6 @@ export default function Protected({ children }: { children: React.ReactNode }) {
   if (loading) return <div>Loading...</div>;
 
   if (!currentLoggedInUserData) return null;
-
+  if(!currentLoggedInUserData?.accessToken) return null;
   return children;
 }

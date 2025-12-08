@@ -38,7 +38,7 @@ export interface UserPostLike {
 }
 export interface UserPostComment {
   userId: string;
-  comments: {postId: string; userId: string; comment: string; createdAt: Date; }[];
+  comments: {postId: string;  comment: string; createdAt: Date; }[];
 }
 export interface UserFollowing{
   userId: string;

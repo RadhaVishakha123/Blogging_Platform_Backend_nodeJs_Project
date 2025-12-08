@@ -2,9 +2,17 @@ import { useEffect, useState } from "react";
 import useUser from "../../hooks/useUser";
 import { Avatar, Card, Button, Spin, Input, Modal } from "antd";
 import InfiniteScroll from "react-infinite-scroll-component";
-
+import { useRecoilValue } from "recoil";
+import { postRefreshAtom } from "../../recoil/atoms/postRefreshAtom";
 import { App } from "antd";
-import { postLikeCount ,getUserDetails,addComment,toggleLike,isPostLike} from "../../Helper/utility";
+import {
+  postLikeCount,
+  getUserDetails,
+  addComment,
+  fetchComments,
+  toggleLike,
+  isPostLike,
+} from "../../Helper/utility";
 import PostCard from "../post/PostCard";
 import CommentModal from "../comment/CommentModal";
 import type {
@@ -15,71 +23,79 @@ import type {
 
 export default function Home() {
   const { currentLoggedInUserData } = useUser();
-  if (!currentLoggedInUserData) return;
+   if (!currentLoggedInUserData)
+  return <div className="text-white text-center p-5">Loading...</div>;
+  const accessToken=currentLoggedInUserData.accessToken;
+  const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const postRefresh=useRecoilValue(postRefreshAtom);
   const [selectedPost, setselectedPost] = useState<any>(null);
   const message = App.useApp().message;
-  function commentHandler(post: any) {
-   
+
+  async function commentHandler(post: any) {
     setIsModalOpen(true);
     setselectedPost(post);
+    console.log("post data:",post);
+    const comments = await fetchComments(post._id,accessToken); // fetch comments for this post
+     setCommentData(comments); // save to state
+     console.log("home page comment data after the 2 :",commentData);
     setCommentText("");
+    console.log()
   }
   const loggedInUserId = currentLoggedInUserData?.user.id ?? "";
-  console.log("home page current user id:",loggedInUserId);
+  console.log("home page current user id:", loggedInUserId);
   const [refreshLikes, setRefreshLikes] = useState(false);
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  const userProfileData =
-    JSON.parse(localStorage.getItem("userProfileData") ?? "[]") || [];
-  const userPostData =
-    JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
-  const [userPostCommentData, setUserPostCommentData] = useState<
-    UserPostComment[]
-  >(() => {
-    return (
-      JSON.parse(localStorage.getItem("userPostCommentData") ?? "[]") || []
-    );
-  });
+  
   const [userPostLikeData, setUserPostLikeData] = useState<UserPostLike[]>(
     () => {
       return JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
     }
   );
+ 
   useEffect(() => {
-    // Merge post with its user details
-    if (userPostData === undefined) return;
-    const merged: any = userPostData
-      .map((post: UserPost) => {
-        const user: any = userProfileData.find(
-          (u: any) => u.userId === post.userId
-        );
-        if (!user) return null;
-        return {
-          ...post,
-          fullName: user.fullName || "Unknown User",
-          profilePic: user.profilePic || null,
-          accountType: user.accountType || "public",
-        };
-      })
-      .filter(Boolean);
+    
+  
+  (async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/userpost/allpost",
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+          },
+        }
+      );
 
-    // Only public accounts posts visible
-    const publicPosts = merged.filter((p: any) => p.accountType === "public");
+      const result = await response.json();
 
-    // Sort by latest post
-    publicPosts.sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+      // API returns { message, data: posts }
+      const merged = result.data || [];
+console.log("post data:",merged);
+      // Only public account posts
+      const publicPosts = merged.filter(
+        (p: any) => p.accountType === "public"
+      );
 
-    setHasMore(true);
-    setAllPosts(publicPosts);
-    setVisiblePosts(publicPosts.slice(0, 5)); // Show first 5
-  }, []);
-  const loadMore = () => {
+      // Sort latest first
+      publicPosts.sort(
+        (a: any, b: any) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setAllPosts(publicPosts);
+      setVisiblePosts(publicPosts.slice(0, 5));
+      setHasMore(true);
+    } catch (err) {
+      console.log("Error fetching posts:", err);
+    }
+  })();
+}, [postRefresh]);
+const loadMore = () => {
     if (visiblePosts.length >= allPosts.length) {
       setHasMore(false);
       return;
@@ -89,26 +105,27 @@ export default function Home() {
       ...allPosts.slice(prev.length, prev.length + 5),
     ]);
   };
-  
-  function commandAddHandler() {
+
+  async function commandAddHandler() {
+   
     if (!commentText.trim()) {
       message.warning("Comment cannot be empty");
       return;
     }
-    const updateData=addComment(selectedPost.postId, commentText,loggedInUserId,userPostCommentData);
-    setUserPostCommentData(updateData)
-    
+    const updateData = await addComment(
+      selectedPost._id,
+      commentText,
+      loggedInUserId,
+      accessToken
+    );
+    console.log("selected post id:",selectedPost.postId)
+    const comments = await fetchComments(selectedPost._id,accessToken); // fetch comments for this post
+      setCommentData(comments); // save to state
+      console.log("home page comment data after the ",commentData);
     setIsModalOpen(false);
   }
-  
-  
 
-  useEffect(() => {
-    localStorage.setItem(
-      "userPostCommentData",
-      JSON.stringify(userPostCommentData)
-    );
-  }, [userPostCommentData]);
+  
   useEffect(() => {
     localStorage.setItem("userPostLikeData", JSON.stringify(userPostLikeData));
   }, [userPostLikeData]);
@@ -137,24 +154,25 @@ export default function Home() {
           <div className="flex flex-col gap-6 lg:w-100 md:w-100 mx-auto">
             {visiblePosts.map((post: any) => (
               <PostCard
-    key={post.postId}
-    post={post}
-    onCommentClick={commentHandler}
-  />
+                key={post._id}
+                post={post}
+                onCommentClick={()=>commentHandler(post)}
+              />
             ))}
           </div>
         </InfiniteScroll>
       </div>
-     <CommentModal
-  isOpen={isModalOpen}
-  onClose={() => setIsModalOpen(false)}
-  onSubmit={commandAddHandler}
-  commentText={commentText}
-  setCommentText={setCommentText}
-  selectedPost={selectedPost}
-  commentData={userPostCommentData}
-/>
-
+      <CommentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={commandAddHandler}
+        commentText={commentText}
+        setCommentText={setCommentText}
+        selectedPost={selectedPost}
+        commentData={commentData}
+      />
     </>
   );
 }
+
+
