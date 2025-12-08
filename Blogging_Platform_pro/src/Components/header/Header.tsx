@@ -30,11 +30,9 @@ export default function Header() {
   const navigate = useNavigate();
   const isMobile = window.innerWidth < 768;
   const [isHumburgerMenuOpen, setHumburgerMenuOpen] = useState<boolean>(false);
+  const [results,setResults]=useState<any[]>([])
   const [refreshFollow, setRefreshFollow] = useState<boolean>(false);
-  const userRegisterData =
-    JSON.parse(localStorage.getItem("userRegisterData") ?? "[]") || [];
-  const userProfileData =
-    JSON.parse(localStorage.getItem("userProfileData") ?? "[]") || [];
+  
   const MenuItems = [
     { name: "Home", icon: <HomeOutlined />, path: "/Home" },
     {
@@ -60,33 +58,35 @@ export default function Header() {
       credentials: "include"
     });
     document.cookie = "refreshToken=; Path=/; Max-Age=0";
-    //return res.json();
-    console.log("delete api :",res);
   }
-  const mergedUsers = useMemo(() => {
-    return userRegisterData.map((user: any) => {
-      const profile: UserProfile | undefined = userProfileData.find(
-        (p: UserProfile) => p.userId === user.id
-      );
-      return {
-        userId: user.id,
-        username: user.username,
-        fullName: profile?.fullName || "",
-        profilePic: profile?.profilePic || "",
-        bio: profile?.bio || "",
-        accountType: profile?.accountType || "public",
-      };
-    });
-  }, [userRegisterData, userProfileData]);
+  
+useEffect(()=>{
+  if (!debouncedQuery.trim()) {
+    setResults([]);
+    return;
+  }
 
-  function searchUser(searchText: string) {
+  async function fetchSearch() {
+    const res = await searchUser(debouncedQuery); // this returns API data
+    setResults(res); // set the array into state
+  }
+
+  fetchSearch();
+
+},[debouncedQuery])
+ async function searchUser(searchText: string) {
+    
     if (!searchText.trim()) return [];
 
     const lowerQuery = searchText.toLowerCase();
-
-    return mergedUsers.filter((user: any) =>
-      user.username.toLowerCase().includes(lowerQuery)
-    );
+const mergedUsers=await fetch(`http://localhost:8000/api/search?query=${lowerQuery}`,{
+  method: "GET",
+        headers: {
+          Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+        },
+});
+const result = await mergedUsers.json();
+return result.filtered;
   }
 
   return (
@@ -249,10 +249,10 @@ export default function Header() {
         {/* Search results */}
         {query.trim() !== "" && (
           <div className="space-y-3">
-            {searchUser(debouncedQuery).length === 0 ? (
+            {results.length === 0 ? (
               <p className="text-gray-500 text-center">No users found.</p>
             ) : (
-              searchUser(debouncedQuery).map((user: any) => (
+              results.map((user: any) => (
                 <div
   key={user.userId}
   className="flex items-center justify-between p-3 bg-black rounded-lg hover:bg-gray-800 cursor-pointer"
@@ -274,7 +274,7 @@ export default function Header() {
     }}
   >
     <img
-      src={user.profilePic ? user.profilePic : Default_User}
+      src={user.profilePic ?`http://localhost:8000${ user.profilePic}` : Default_User}
       alt={user.fullName}
       className="w-12 h-12 rounded-full object-cover border border-gray-600"
     />
