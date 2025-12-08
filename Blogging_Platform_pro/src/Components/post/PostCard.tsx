@@ -9,21 +9,12 @@ import {
 } from "../../Helper/utility";
 import useUser from "../../hooks/useUser";
 import { useEffect, useState } from "react";
-import type { UserPostLike } from "../../Helper/Type";
-
 export default function PostCard({ post, onCommentClick }: any) {
   const { currentLoggedInUserData } = useUser();
-  const loggedInUserId = currentLoggedInUserData?.user._id;
-
-  const [userPostLikeData, setUserPostLikeData] = useState<UserPostLike[]>(() => {
-    return JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
-  });
-
-
-  useEffect(() => {
-    localStorage.setItem("userPostLikeData", JSON.stringify(userPostLikeData));
-  }, [userPostLikeData]);
-
+  const loggedInUserId = currentLoggedInUserData?.user.id;
+  const accessToken=currentLoggedInUserData?.accessToken ?? "";
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+const [likeCount, setLikeCount] = useState<number>(0);
   // --------------------------
   // SAFE DEFAULTS
   // --------------------------
@@ -39,13 +30,25 @@ export default function PostCard({ post, onCommentClick }: any) {
   const content = post?.content ?? "";
   const postId = post?._id ?? "";
   const createdAt = post?.createdAt ?? new Date().toISOString();
-
   if (!post) return null; // <- Safety guard
-const clickbtn = ()=>{
-  const updated_data = toggleLike(postId,currentLoggedInUserData?.user._id as string,userPostLikeData)
-  setUserPostLikeData(updated_data)
+const clickbtn = async()=>{
+  const liked = await toggleLike(postId,currentLoggedInUserData?.user.id as string,accessToken);
+  setIsLiked(liked);
+ const count = await postLikeCount(postId, accessToken);
+  setLikeCount(count); // update count
+ 
 }
-
+useEffect(()=>{
+  async function fetchLikeInfo() {
+  const likeUpdate:boolean =await isPostLike(postId, loggedInUserId as string,accessToken);
+  console.log("likeUpdate:",likeUpdate);
+    setIsLiked(likeUpdate);
+    const countUpdate=await postLikeCount(postId, accessToken);
+    setLikeCount(countUpdate)
+   }
+    fetchLikeInfo();
+  }
+,[postId,loggedInUserId])
   return (
     <Card className="bg-[#111] border border-gray-800 text-white">
       {/* User Info */}
@@ -74,14 +77,14 @@ const clickbtn = ()=>{
             className="flex flex-col items-center cursor-pointer"
             onClick={clickbtn}
           >
-            {isPostLike(postId, loggedInUserId as string,userPostLikeData) ? (
+            {isLiked? (
               <HeartFilled className="text-2xl" style={{ color: "red" }} />
             ) : (
               <HeartOutlined className="text-2xl" />
             )}
 
             <span className="text-sm mt-1 text-gray-400">
-              {postLikeCount(postId, userPostLikeData)}
+              {likeCount}
             </span>
           </div>
 

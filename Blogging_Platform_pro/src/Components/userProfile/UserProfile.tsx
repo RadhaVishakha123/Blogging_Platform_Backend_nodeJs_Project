@@ -34,11 +34,6 @@ export default function UserProfile() {
   if (!currentLoggedInUserData)
     return <div className="text-white text-center p-5">Loading...</div>;
   const [isProfileModelOpen, setIsProfileModelOpen] = useState<boolean>(false);
-  const userPostLikeData =
-    JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
-  const [userProfileData, setUserProfileData] = useState<UserProfile[]>(() => {
-    return JSON.parse(localStorage.getItem("userProfileData") ?? "[]") || [];
-  });
   const loggedInUserId = currentLoggedInUserData?.user.id ?? "";
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [userDetails, setUserDetails] = useState<any>(null);
@@ -311,7 +306,7 @@ export default function UserProfile() {
       console.log("userdataaaa:", posts);
       setUserPosts(posts);
     })();
-  }, [profileUserId]);
+  }, [profileUserId,postRefresh]);
 
   useEffect(() => {
     setIsFollowing(
