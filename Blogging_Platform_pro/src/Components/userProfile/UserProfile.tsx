@@ -10,7 +10,9 @@ import CommentModal from "../comment/CommentModal";
 import { addComment, fetchComments } from "../../Helper/utility";
 import { App } from "antd";
 import type { UserPostComment, UserPostLike } from "../../Helper/Type";
-
+import UserFollower_FollowingRow from "../follow/modal/UserFollower_FollowingRow";
+import { useSetRecoilState } from "recoil";
+import { followRefreshAtom } from "../../recoil/atoms/followRefreshAtom";
 import type {
   UserProfile,
   UserFollowing,
@@ -18,7 +20,6 @@ import type {
   UserPost,
 } from "../../Helper/Type";
 import {
-  fileToBase64,
   followUser,
   unfollowUser,
   checkIsFollowing,
@@ -45,10 +46,12 @@ export default function UserProfile() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [selectedPost, setselectedPost] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   const [userFollowingData, setUserFollowingData] = useState<UserFollowing[]>(
     () => JSON.parse(localStorage.getItem("userFollowingData") ?? "[]")
   );
-
+ const followRefresh = useRecoilValue(followRefreshAtom);
+  const setfollowRefresh = useSetRecoilState(followRefreshAtom);
   const accessToken = currentLoggedInUserData?.accessToken ?? "";
 
   const [userFollowerData, setUserFollowerData] = useState<UserFollower[]>(() =>
@@ -65,12 +68,7 @@ export default function UserProfile() {
   const profileUsername =
     state?.username || currentLoggedInUserData?.user.username;
   console.log("usernmae:", profileUsername);
-  const [isFollowing, setIsFollowing] = useState<boolean>(
-    checkIsFollowing(
-      currentLoggedInUserData?.user.id || "",
-      profileUserId || ""
-    )
-  );
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const FollowerCount =
     userFollowerData?.find(
       (follow: UserFollower) => follow.userId === profileUserId
@@ -131,18 +129,6 @@ export default function UserProfile() {
     );
     const result = await response.json();
     return result.profile;
-    // const user = userProfileData.find((u) => u.userId === userId);
-
-    // if (!user) {
-    //   return {
-    //     userId,
-    //     fullName: "",
-    //     bio: "",
-    //     profilePic: "",
-    //     accountType: "public",
-    //   };
-    // }
-    // return user;q
   }
 
   async function fetchPostData(profileUserId: string) {
@@ -162,20 +148,7 @@ export default function UserProfile() {
     // API returns { message, data: posts }
     const merged = result.data || [];
     return merged;
-    // const postData: UserPost[] =
-    //   JSON.parse(localStorage.getItem("userPostData") ?? "[]") || [];
-
-    // //  use state variable, not reloaded storage variable
-    // const user = userProfileData.find((u: any) => u.userId === profileUserId);
-
-    // return postData
-    //   .filter((post) => post.userId === profileUserId)
-    //   .map((post) => ({
-    //     ...post,
-    //     fullName: user?.fullName || "Unknown User",
-    //     profilePic: user?.profilePic || null,
-    //     accountType: user?.accountType || "public",
-    //   }));
+  
   }
 
   if (!currentLoggedInUserData)
@@ -309,13 +282,17 @@ export default function UserProfile() {
   }, [profileUserId,postRefresh]);
 
   useEffect(() => {
-    setIsFollowing(
-      checkIsFollowing(
-        currentLoggedInUserData?.user.id || "",
-        profileUserId || ""
-      )
-    );
-  }, [refreshFollow, profileUserId]);
+   async function loadFollow() {
+      const status = await checkIsFollowing(
+        currentLoggedInUserData?.user.id,
+        profileUserId,
+        accessToken
+      );
+      setIsFollowing(status);
+      console.log("checkIsFollowing:", status);
+    }
+    loadFollow();
+  }, [refreshFollow, profileUserId,followRefresh]);
 
   // SAVE CHANGES
   async function saveChanges() {
@@ -337,6 +314,19 @@ export default function UserProfile() {
   }
   if (!profileUserId) {
     return <div className="text-white text-center p-5">User not found</div>;
+  }
+  
+  async function handleFollowToggle() {
+    setLoading(true);
+    setfollowRefresh((p) => !p);
+    if (isFollowing) {
+      await unfollowUser(currentLoggedInUserData?.user.id, profileUserId, accessToken);
+      setIsFollowing(false);
+    } else {
+      await followUser(currentLoggedInUserData?.user.id,profileUserId, accessToken);
+      setIsFollowing(true);
+    }
+    setLoading(false);
   }
 
   return (
@@ -411,24 +401,9 @@ export default function UserProfile() {
                 ? "bg-gray-800 text-white border-gray-700"
                 : "bg-blue-600 hover:bg-blue-700 border-none"
             }`}
-            onClick={() => {
-              if (isFollowing) {
-                const result = unfollowUser(
-                  currentLoggedInUserData?.user.id,
-                  profileUserId!
-                );
-                setUserFollowerData(result.userFollowerData);
-                setUserFollowingData(result.userFollowingData);
-                setRefreshFollow((prev) => !prev);
-              } else {
-                const result = followUser(
-                  currentLoggedInUserData?.user.id,
-                  profileUserId!
-                );
-                setUserFollowerData(result.userFollowerData);
-                setUserFollowingData(result.userFollowingData);
-                setRefreshFollow((prev) => !prev);
-              }
+            onClick={(e) => {
+              e.stopPropagation();
+            handleFollowToggle();
             }}
           >
             {isFollowing ? "Unfollow" : "Follow"}
@@ -551,127 +526,143 @@ export default function UserProfile() {
             <p>No {followModalTitle.toLowerCase()} yet.</p>
           ) : (
             followList.map((item, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center gap-3 mb-4"
-              >
-                <div className=" flex ">
-                  <Avatar src={item.profilePic || Default_User} />
-                  <div className=" mt-1 ml-3">
-                    <p className="text-gray-400 text-sm">
-                      {item.fullName || "unKnow"}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <Button
-                    type={
-                      checkIsFollowing(
-                        currentLoggedInUserData?.user.id,
-                        item.userId
-                      )
-                        ? "default"
-                        : "primary"
-                    }
-                    className={`${
-                      checkIsFollowing(
-                        currentLoggedInUserData?.user.id,
-                        item.userId
-                      )
-                        ? "bg-gray-800 text-white border-gray-700"
-                        : "bg-blue-600 hover:bg-blue-700 border-none"
-                    }`}
-                    onClick={async () => {
-                      let result;
+              <UserFollower_FollowingRow key={index} item={item}
+    currentUserId={currentLoggedInUserData?.user.id}
+    accessToken={accessToken}
+      onCancel={() => {
+          setIsFollowModalOpen(false);
+          setFollowList([]);
+        }}
+         />
+              // <div
+              //   key={index}
+              //   className="flex justify-between items-center gap-3 mb-4"
+              // >
+              //   <div className=" flex ">
+              //     <Avatar src={item.profilePic || Default_User} />
+              //     <div className=" mt-1 ml-3">
+              //       <p className="text-gray-400 text-sm">
+              //         {item.fullName || "unKnow"}
+              //       </p>
+              //     </div>
+              //   </div>
+              //   <div>
+              //     <Button
+              //       type={
+              //         checkIsFollowing(
+              //           currentLoggedInUserData?.user.id,
+              //           item.userId,
+              //           accessToken
+              //         )
+              //           ? "default"
+              //           : "primary"
+              //       }
+              //       className={`${
+              //         checkIsFollowing(
+              //           currentLoggedInUserData?.user.id,
+              //           item.userId,
+              //           accessToken
+              //         )
+              //           ? "bg-gray-800 text-white border-gray-700"
+              //           : "bg-blue-600 hover:bg-blue-700 border-none"
+              //       }`}
+              //       onClick={async () => {
+              //         let result;
 
-                      if (
-                        checkIsFollowing(
-                          currentLoggedInUserData?.user.id,
-                          item.userId
-                        )
-                      ) {
-                        result = unfollowUser(
-                          currentLoggedInUserData?.user.id,
-                          item.userId
-                        );
-                      } else {
-                        result = followUser(
-                          currentLoggedInUserData?.user.id,
-                          item.userId
-                        );
-                      }
+              //         if (
+              //           checkIsFollowing(
+              //             currentLoggedInUserData?.user.id,
+              //             item.userId,
+              //             accessToken
+              //           )
+              //         ) {
+              //           result = unfollowUser(
+              //             currentLoggedInUserData?.user.id,
+              //             item.userId,
+              //             accessToken
+              //           );
+              //         } else {
+              //           result = followUser(
+              //             currentLoggedInUserData?.user.id,
+              //             item.userId,
+              //             accessToken
+              //           );
+              //         }
 
-                      setUserFollowerData(result.userFollowerData);
-                      setUserFollowingData(result.userFollowingData);
+              //         setUserFollowerData(result.userFollowerData);
+              //         setUserFollowingData(result.userFollowingData);
 
-                      // -----------------------------
-                      // Update FOLLOWERS modal list
-                      // -----------------------------
-                      if (followModalTitle === "Followers") {
-                        const followerIds =
-                          result.userFollowerData.find(
-                            (f: any) => f.userId === profileUserId
-                          )?.follower || [];
+              //         // -----------------------------
+              //         // Update FOLLOWERS modal list
+              //         // -----------------------------
+              //         if (followModalTitle === "Followers") {
+              //           const followerIds =
+              //             result.userFollowerData.find(
+              //               (f: any) => f.userId === profileUserId
+              //             )?.follower || [];
 
-                        const mergedFollowers = await Promise.all(
-                          followerIds.map(async (id: any) => {
-                            const profile = await getUserDetails(
-                              id,
-                              accessToken
-                            );
-                            return {
-                              userId: id,
-                              fullName: profile?.fullName || "",
-                              profilePic: profile?.profilePic || "",
-                            };
-                          })
-                        );
+              //           const mergedFollowers = await Promise.all(
+              //             followerIds.map(async (id: any) => {
+              //               const profile = await getUserDetails(
+              //                 id,
+              //                 accessToken
+              //               );
+              //               return {
+              //                 userId: id,
+              //                 fullName: profile?.fullName || "",
+              //                 profilePic: profile?.profilePic || "",
+              //               };
+              //             })
+              //           );
 
-                        setFollowList(mergedFollowers);
-                      }
+              //           setFollowList(mergedFollowers);
+              //         }
 
-                      // -----------------------------
-                      // Update FOLLOWING modal list
-                      // -----------------------------
-                      if (followModalTitle === "Following") {
-                        const followingIds =
-                          result.userFollowingData.find(
-                            (f: any) => f.userId === profileUserId
-                          )?.following || [];
+              //         // -----------------------------
+              //         // Update FOLLOWING modal list
+              //         // -----------------------------
+              //         if (followModalTitle === "Following") {
+              //           const followingIds =
+              //             result.userFollowingData.find(
+              //               (f: any) => f.userId === profileUserId
+              //             )?.following || [];
 
-                        const mergedFollowing = await Promise.all(
-                          followingIds.map(async (id: string) => {
-                            const profile = await getUserDetails(
-                              id,
-                              accessToken
-                            );
-                            return {
-                              userId: id,
-                              fullName: profile?.fullName || "",
-                              profilePic: profile?.profilePic || "",
-                            };
-                          })
-                        );
+              //           const mergedFollowing = await Promise.all(
+              //             followingIds.map(async (id: string) => {
+              //               const profile = await getUserDetails(
+              //                 id,
+              //                 accessToken
+              //               );
+              //               return {
+              //                 userId: id,
+              //                 fullName: profile?.fullName || "",
+              //                 profilePic: profile?.profilePic || "",
+              //               };
+              //             })
+              //           );
 
-                        setFollowList(mergedFollowing);
-                      }
+              //           setFollowList(mergedFollowing);
+              //         }
 
-                      setRefreshFollow((prev) => !prev);
-                    }}
-                  >
-                    {checkIsFollowing(
-                      currentLoggedInUserData?.user.id,
-                      item.userId
-                    )
-                      ? "Unfollow"
-                      : "Follow"}
-                  </Button>
-                </div>
-              </div>
+              //         setRefreshFollow((prev) => !prev);
+              //       }}
+              //     >
+              //       {checkIsFollowing(
+              //         currentLoggedInUserData?.user.id,
+              //         item.userId,
+              //         accessToken
+              //       )
+              //         ? "Unfollow"
+              //         : "Follow"}
+              //     </Button>
+              //   </div>
+              //</div>
+              
             ))
           )}
         </div>
       </Modal>
+  
       <CommentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
