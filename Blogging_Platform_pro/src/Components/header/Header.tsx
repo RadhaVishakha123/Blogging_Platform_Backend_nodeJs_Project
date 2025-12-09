@@ -7,14 +7,19 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
 } from "@ant-design/icons";
-import { Drawer, Input,Button } from "antd";
+import { Drawer, Input, Button } from "antd";
 import { LoginOutlined } from "@ant-design/icons";
 import PostModal from "../post/modal/PostModal";
 import { useNavigate } from "react-router-dom";
 import Default_User from "../../assets/Default_User.jpg";
 import { useEffect, useMemo } from "react";
 import type { UserProfile, User } from "../../Helper/Type";
-import { unfollowUser,followUser,checkIsFollowing } from "../../Helper/utility";
+import SearchUserRow from "../search/SearchUserRow";
+import {
+  unfollowUser,
+  followUser,
+  checkIsFollowing,
+} from "../../Helper/utility";
 import useUser from "../../hooks/useUser";
 import { useDebounce } from "use-debounce";
 
@@ -24,15 +29,19 @@ export default function Header() {
   const { setCurrentLoggedInUserData } = useUser();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSlideOpen, setIsSlideOpen] = useState<boolean>(false);
- const {currentLoggedInUserData}=useUser();
+  const { currentLoggedInUserData } = useUser();
   const [query, setQuery] = useState<string>("");
-  const [debouncedQuery]=useDebounce(query,500)
+  const [debouncedQuery] = useDebounce(query, 500);
   const navigate = useNavigate();
   const isMobile = window.innerWidth < 768;
   const [isHumburgerMenuOpen, setHumburgerMenuOpen] = useState<boolean>(false);
-  const [results,setResults]=useState<any[]>([])
+  const [results, setResults] = useState<any[]>([]);
   const [refreshFollow, setRefreshFollow] = useState<boolean>(false);
-  
+  //for follow. unfollow
+  const [isFollowingState, setIsFollowingState] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const accessToken = currentLoggedInUserData?.accessToken ?? "";
   const MenuItems = [
     { name: "Home", icon: <HomeOutlined />, path: "/Home" },
     {
@@ -53,40 +62,41 @@ export default function Header() {
   async function handleLogout() {
     setCurrentLoggedInUserData(null);
     navigate("/");
-    const res=await fetch("http://localhost:8000/api/auth/logout",{
-      method:"DELETE",
-      credentials: "include"
+    const res = await fetch("http://localhost:8000/api/auth/logout", {
+      method: "DELETE",
+      credentials: "include",
     });
     document.cookie = "refreshToken=; Path=/; Max-Age=0";
   }
-  
-useEffect(()=>{
-  if (!debouncedQuery.trim()) {
-    setResults([]);
-    return;
-  }
 
-  async function fetchSearch() {
-    const res = await searchUser(debouncedQuery); // this returns API data
-    setResults(res); // set the array into state
-  }
+  useEffect(() => {
+    if (!debouncedQuery.trim()) {
+      setResults([]);
+      return;
+    }
 
-  fetchSearch();
+    async function fetchSearch() {
+      const res = await searchUser(debouncedQuery); // this returns API data
+      setResults(res); // set the array into state
+    }
 
-},[debouncedQuery])
- async function searchUser(searchText: string) {
-    
+    fetchSearch();
+  }, [debouncedQuery]);
+  async function searchUser(searchText: string) {
     if (!searchText.trim()) return [];
 
     const lowerQuery = searchText.toLowerCase();
-const mergedUsers=await fetch(`http://localhost:8000/api/search?query=${lowerQuery}`,{
-  method: "GET",
+    const mergedUsers = await fetch(
+      `http://localhost:8000/api/search?query=${lowerQuery}`,
+      {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
         },
-});
-const result = await mergedUsers.json();
-return result.filtered;
+      }
+    );
+    const result = await mergedUsers.json();
+    return result.filtered;
   }
 
   return (
@@ -117,7 +127,13 @@ return result.filtered;
               <UserOutlined />
             </div>
           </NavLink>
-          <NavLink to="/" onClick={(e) =>{e.preventDefault();  handleLogout()}}>
+          <NavLink
+            to="/"
+            onClick={(e) => {
+              e.preventDefault();
+              handleLogout();
+            }}
+          >
             <div
               className={`
                   w-12 h-12 flex items-center justify-center rounded-xl
@@ -253,67 +269,15 @@ return result.filtered;
               <p className="text-gray-500 text-center">No users found.</p>
             ) : (
               results.map((user: any) => (
-                <div
-  key={user.userId}
-  className="flex items-center justify-between p-3 bg-black rounded-lg hover:bg-gray-800 cursor-pointer"
->
-  {/* LEFT SIDE — IMAGE + TEXT */}
-  <div
-    className="flex items-center gap-3"
-    onClick={() => {
+                <SearchUserRow
+                key={user.userId}
+    user={user}
+    currentUserId={currentLoggedInUserData?.user.id}
+    accessToken={accessToken}
+    onClose={() => {
       setIsSlideOpen(false);
       setQuery("");
-
-      navigate(`/UserProfile`, {
-        state: {
-          from: "search",
-          userId: user.userId,
-          username: user.username,
-        },
-      });
-    }}
-  >
-    <img
-      src={user.profilePic ?`http://localhost:8000${ user.profilePic}` : Default_User}
-      alt={user.fullName}
-      className="w-12 h-12 rounded-full object-cover border border-gray-600"
-    />
-
-    <div className="text-white">
-      <p className="font-semibold text-base">{user.username}</p>
-      <p className="text-gray-400 text-sm">{user.fullName}</p>
-    </div>
-  </div>
-
-  {/* RIGHT SIDE — BUTTON */}
-  {currentLoggedInUserData && user.userId !== currentLoggedInUserData?.user._id && (
-    <Button
-      type={
-        checkIsFollowing(currentLoggedInUserData?.user._id, user.userId)
-          ? "default"
-          : "primary"
-      }
-      className={`${
-        checkIsFollowing(currentLoggedInUserData?.user._id, user.userId)
-          ? "bg-gray-800 text-white border-gray-700"
-          : "bg-blue-600 hover:bg-blue-700 border-none"
-      }`}
-      onClick={() => {
-        if (checkIsFollowing(currentLoggedInUserData?.user._id, user.userId)) {
-          unfollowUser(currentLoggedInUserData?.user._id, user.userId);
-        } else {
-          followUser(currentLoggedInUserData?.user._id, user.userId);
-        }
-        setRefreshFollow((prev) => !prev);
-      }}
-    >
-      {checkIsFollowing(currentLoggedInUserData?.user._id, user.userId)
-        ? "Unfollow"
-        : "Follow"}
-    </Button>
-  )}
-</div>
-
+    }}></SearchUserRow>
               ))
             )}
           </div>
