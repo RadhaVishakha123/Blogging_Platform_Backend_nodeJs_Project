@@ -42,6 +42,7 @@ export default function UserFollower_FollowingRow({item, currentUserId, accessTo
     }
     setLoading(false);
   }
+  console.log("userfolllower&following row data:",item)
   
   return (
     <>
@@ -52,7 +53,7 @@ export default function UserFollower_FollowingRow({item, currentUserId, accessTo
             <p className="text-gray-400 text-sm">{item.fullName || "unKnow"}</p>
           </div>
         </div>
-        <div>
+        <div>{ item.userId!==currentUserId &&
           <Button
             type={isFollowing ? "default" : "primary"}
             className={`${
@@ -67,7 +68,7 @@ export default function UserFollower_FollowingRow({item, currentUserId, accessTo
               
           >
             {isFollowing ? "Unfollow" : "Follow"}
-          </Button>
+          </Button>}
         </div>
       </div>
     </>
