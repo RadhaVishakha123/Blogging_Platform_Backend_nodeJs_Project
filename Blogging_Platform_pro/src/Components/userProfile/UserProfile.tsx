@@ -28,7 +28,7 @@ import {
 } from "../../Helper/utility";
 import PostCard from "../post/PostCard";
 
-export default function UserProfile() {
+export  default  function UserProfile() {
   const message = App.useApp().message;
   const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const { currentLoggedInUserData } = useUser();
@@ -50,6 +50,8 @@ export default function UserProfile() {
   const [userFollowingData, setUserFollowingData] = useState<UserFollowing[]>(
     () => JSON.parse(localStorage.getItem("userFollowingData") ?? "[]")
   );
+  const [FollowerCount, setFollowerCount] = useState<number>(0);
+const [FollowingCount, setFollowingCount] = useState<number>(0);
  const followRefresh = useRecoilValue(followRefreshAtom);
   const setfollowRefresh = useSetRecoilState(followRefreshAtom);
   const accessToken = currentLoggedInUserData?.accessToken ?? "";
@@ -69,14 +71,21 @@ export default function UserProfile() {
     state?.username || currentLoggedInUserData?.user.username;
   console.log("usernmae:", profileUsername);
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
-  const FollowerCount =
-    userFollowerData?.find(
-      (follow: UserFollower) => follow.userId === profileUserId
-    )?.follower.length || 0;
-  const FollowingCount =
-    userFollowingData?.find(
-      (follow: UserFollowing) => follow.userId === profileUserId
-    )?.following.length || 0;
+// const response=await fetch(`http://localhost:8000/api/follow/count?profileUserId=${profileUserId}`,{
+//   method: "GET",
+//         headers: {
+//           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+//         },
+// });
+// const data:any=await response.json();
+//   const FollowerCount =data.followerCount;
+//     // userFollowerData?.find(
+//     //   (follow: UserFollower) => follow.userId === profileUserId
+//     // )?.follower.length || 0;
+//   const FollowingCount =data.followingCount;
+//     // userFollowingData?.find(
+//     //   (follow: UserFollowing) => follow.userId === profileUserId
+//     // )?.following.length || 0;
 
   const uploadProps = {
     beforeUpload: (file: any) => {
@@ -166,8 +175,17 @@ export default function UserProfile() {
     accountType: "public",
   });
   const openFollowerModal = async () => {
-    const followerData =
-      userFollowerData?.find((f) => f.userId === profileUserId)?.follower || [];
+    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollower?profileUserId=${profileUserId}`,{
+  method: "GET",
+        headers: {
+          Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+        },
+});
+const data=await response.json();
+const followerData=data.userFollower?.follower || [];
+
+    // const followerData =
+    //   userFollowerData?.find((f) => f.userId === profileUserId)?.follower || [];
 
     const mergedList = await Promise.all(
       followerData.map(async (id: string) => {
@@ -186,9 +204,17 @@ export default function UserProfile() {
   };
 
   const openFollowingModal = async () => {
-    const followingData =
-      userFollowingData?.find((f) => f.userId === profileUserId)?.following ||
-      [];
+    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollowing?profileUserId=${profileUserId}`,{
+  method: "GET",
+        headers: {
+          Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+        },
+});
+const data=await response.json();
+const followingData=data.userFollowing?.following ||[];
+    // const followingData =
+    //   userFollowingData?.find((f) => f.userId === profileUserId)?.following ||
+    //   [];
 
     const mergedList = await Promise.all(
       followingData.map(async (id: string) => {
@@ -293,6 +319,31 @@ export default function UserProfile() {
     }
     loadFollow();
   }, [refreshFollow, profileUserId,followRefresh]);
+useEffect(() => {
+  if (!profileUserId) return;
+
+  (async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/follow/count?profileUserId=${profileUserId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      setFollowerCount(data.followerCount || 0);
+      setFollowingCount(data.followingCount || 0);
+
+    } catch (error) {
+      console.log("Follow count fetch error:", error);
+    }
+  })();
+}, [profileUserId, followRefresh]);
 
   // SAVE CHANGES
   async function saveChanges() {
