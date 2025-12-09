@@ -21,7 +21,7 @@ async function handleUnFollow(req, res) {
     
   } catch (err) {
     console.log("Error", err);
-    res.status(500).json({ message: "Server Error", error: err.message });
+    return res.status(500).json({ message: "Server Error", error: err.message });
   }
 
 }
@@ -48,7 +48,7 @@ async function handleFollow(req, res) {
     
   } catch (err) {
     console.log("Error", err);
-    res.status(500).json({ message: "Server Error", error: err.message });
+    return res.status(500).json({ message: "Server Error", error: err.message });
   }
 }
 
@@ -60,19 +60,16 @@ async function checkIsFollowing(req, res) {
     }
 
     const currUserExist =await UserFollowing.findOne({ userId: currentUserId });
-    if (currUserExist) {
-      const targetUserExist = currUserExist.following.includes(targetUserId);
-      if (targetUserExist) {
-        res.status(200).json({ isfollowing: true });
-      }
-      else{
-        res.status(200).json({ isfollowing: false });
-      }
+    if (!currUserExist) {
+      return res.status(200).json({ isfollowing: false });
     }
-    res.status(200).json({ isfollowing: false });
+
+    const isFollowing =currUserExist.following.includes(targetUserId);
+
+    return res.status(200).json({ isfollowing: isFollowing });
   } catch (err) {
     console.log("Error ", err);
-    res.status(500).json({ message: "Server Error", error: err.message });
+    return res.status(500).json({ message: "Server Error", error: err.message });
   }
 }
 
