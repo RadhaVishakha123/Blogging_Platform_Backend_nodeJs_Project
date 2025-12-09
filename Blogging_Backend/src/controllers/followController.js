@@ -72,5 +72,53 @@ async function checkIsFollowing(req, res) {
     return res.status(500).json({ message: "Server Error", error: err.message });
   }
 }
+async function countFollowing(req, res) {
+  try{const profileUserId=req.body;
+  const userFollower = await UserFollowing.find({userId:profileUserId});
+  if(!userFollower){
+    return res.status(200).json({followingCount:0})
+  }
+  const followingCount=userFollower.following.length;
+  return res.status(200).json({followingCount:followingCount})}
+  catch (err) {
+    console.log("Error ", err);
+    return res.status(500).json({ message: "Server Error", error: err.message });
+  }
+}
+async function countFollower(req, res) {
+  try{const profileUserId=req.body;
+  const userFollower=await UserFollower.find({userId:profileUserId});
+  if(!userFollower){
+    return res.status(200).json({followerCount:0})
+  }
+  const followingCount=userFollower.following.length;
+  return res.status(200).json({followerCount:followingCount})}
+  catch (err) {
+    console.log("Error ", err);
+    return res.status(500).json({ message: "Server Error", error: err.message });
+  }
+}
+async function fetchUserFollower(req, res) {
+  try{const profileUserId=req.body;
+  const userFollower=await UserFollower.find({userId:profileUserId});
+  return res.status(200).json({userFollower})}
+  catch (err) {
+    console.log("Error ", err);
+    return res.status(500).json({ message: "Server Error", error: err.message });
+  }
+}
+async function fetchUserFollowing(req, res) {
+  try{const profileUserId=req.body;
+  const userFollowing=await UserFollowing.find({userId:profileUserId});
+  return res.status(200).json({userFollowing})}
+  catch (err) {
+    console.log("Error ", err);
+    return res.status(500).json({ message: "Server Error", error: err.message });
+  }
 
-module.exports = { handleUnFollow, handleFollow, checkIsFollowing };
+
+}
+
+
+
+module.exports = { handleUnFollow, handleFollow, checkIsFollowing,countFollowing,countFollower,fetchUserFollower,fetchUserFollowing };
