@@ -1,6 +1,7 @@
 import React from 'react'
 import { useEffect } from 'react';
 import useUser from '../../hooks/useUser';
+import { API_BASE_URL } from '../../config';
 export default function TokenRefresher() {
     const {setCurrentLoggedInUserData,currentLoggedInUserData,loading,setLoading}=useUser();
 // atob(...)
@@ -14,7 +15,7 @@ export default function TokenRefresher() {
         let timeout: ReturnType<typeof setTimeout>;
         async function checkAuth() {
           try {
-            const res = await fetch("http://localhost:8000/api/auth/refresh", {
+            const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
               method: "POST",
               credentials: "include",
             });

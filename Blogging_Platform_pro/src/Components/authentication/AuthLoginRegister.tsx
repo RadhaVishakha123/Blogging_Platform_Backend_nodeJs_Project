@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { App } from "antd";
 import type { User } from "../../Helper/Type";
 import { nanoid } from "nanoid";
+import { API_BASE_URL } from "..//..//config";
 
 const { Title, Text } = Typography;
 
@@ -38,7 +39,7 @@ export default function AuthLoginRegister() {
     //   message.success("Registration successful! Please log in.");
     //   return true;
     // }
-    const res=await fetch("http://localhost:8000/api/auth/register",{
+    const res=await fetch(`${API_BASE_URL}/api/auth/register`,{
       method:"POST",
       headers:{ "Content-Type": "application/json" },
       body:JSON.stringify(data)
@@ -58,7 +59,7 @@ export default function AuthLoginRegister() {
     // setCurrentLoggedInUserData(user);
     // return user;
     console.log("data in login api call send",data)
-const res=await fetch("http://localhost:8000/api/auth/login",{
+const res=await fetch(`${API_BASE_URL}/api/auth/login`,{
       method:"POST",
       credentials: "include",  
       headers:{ "Content-Type": "application/json" },

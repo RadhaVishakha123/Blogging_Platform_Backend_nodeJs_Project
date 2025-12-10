@@ -6,6 +6,7 @@ import type { PostPopupProps, UserPost } from "../../../Helper/Type";
 import { App } from "antd";
 import { useSetRecoilState } from "recoil";
 import { postRefreshAtom } from "../../../recoil/atoms/postRefreshAtom";
+import { API_BASE_URL } from "../../../config";
 export default function PostModal({
   isModalOpen,
   setIsModalOpen,
@@ -23,7 +24,7 @@ export default function PostModal({
   formData.append("userId", uid);
   formData.append("content", postData.content);
   formData.append("postImage", postData.postImage);   // SAME NAME AS MULTER
-  const response = await fetch("http://localhost:8000/api/userpost", {
+  const response = await fetch(`${API_BASE_URL}/api/userpost`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,

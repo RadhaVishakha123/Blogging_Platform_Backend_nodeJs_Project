@@ -9,6 +9,7 @@ import {
 } from "../../Helper/utility";
 import useUser from "../../hooks/useUser";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../../config";
 export default function PostCard({ post, onCommentClick }: any) {
   const { currentLoggedInUserData } = useUser();
   const loggedInUserId = currentLoggedInUserData?.user.id;
@@ -23,9 +24,9 @@ const [likeCount, setLikeCount] = useState<number>(0);
      profilePic=Default_User;
   }
   else{
-   profilePic =`http://localhost:8000${post?.profilePic }`;
+   profilePic =`${API_BASE_URL}${post?.profilePic }`;
   }
-  const postImage = `http://localhost:8000${post.postImage}`;
+  const postImage = `${API_BASE_URL}${post.postImage}`;
   const fullName = post?.fullName ?? "Unknown User";
   const content = post?.content ?? "";
   const postId = post?._id ?? "";

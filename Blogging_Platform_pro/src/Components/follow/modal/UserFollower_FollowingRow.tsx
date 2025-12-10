@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { Button } from "antd";
 import Default_User from "../../../assets/Default_User.jpg";
 import {Avatar} from "antd";
+import { API_BASE_URL } from "../../../config";
 export default function UserFollower_FollowingRow({item, currentUserId, accessToken, onClose }:any) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +49,7 @@ export default function UserFollower_FollowingRow({item, currentUserId, accessTo
     <>
       <div key={item._id} className="flex justify-between items-center gap-3 mb-4">
         <div className=" flex ">
-          <Avatar src={`http://localhost:8000${item.profilePic}` || Default_User} />
+          <Avatar src={`${API_BASE_URL}${item.profilePic}` || Default_User} />
           <div className=" mt-1 ml-3">
             <p className="text-gray-400 text-sm">{item.fullName || "unKnow"}</p>
           </div>
