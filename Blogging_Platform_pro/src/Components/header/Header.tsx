@@ -15,6 +15,7 @@ import Default_User from "../../assets/Default_User.jpg";
 import { useEffect, useMemo } from "react";
 import type { UserProfile, User } from "../../Helper/Type";
 import SearchUserRow from "../search/SearchUserRow";
+import { API_BASE_URL } from "../../config";
 import {
   unfollowUser,
   followUser,
@@ -62,7 +63,7 @@ export default function Header() {
   async function handleLogout() {
     setCurrentLoggedInUserData(null);
     navigate("/");
-    const res = await fetch("http://localhost:8000/api/auth/logout", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -87,7 +88,7 @@ export default function Header() {
 
     const lowerQuery = searchText.toLowerCase();
     const mergedUsers = await fetch(
-      `http://localhost:8000/api/search?query=${lowerQuery}`,
+      `${API_BASE_URL}/api/search?query=${lowerQuery}`,
       {
         method: "GET",
         headers: {

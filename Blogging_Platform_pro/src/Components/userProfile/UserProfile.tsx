@@ -13,6 +13,7 @@ import type { UserPostComment, UserPostLike } from "../../Helper/Type";
 import UserFollower_FollowingRow from "../follow/modal/UserFollower_FollowingRow";
 import { useSetRecoilState } from "recoil";
 import { followRefreshAtom } from "../../recoil/atoms/followRefreshAtom";
+import { API_BASE_URL } from "../../config";
 import type {
   UserProfile,
   UserFollowing,
@@ -111,7 +112,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
     formData.append("bio", data.bio);
     formData.append("accountType", data.accountType);
     formData.append("profilePic", data.profilePic);
-    const response = await fetch("http://localhost:8000/api/userprofile/add", {
+    const response = await fetch(`${API_BASE_URL}/api/userprofile/add`, {
       method: "post",
       headers: {
         Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
@@ -128,7 +129,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
   // ---------------------------
   async function fetchUserProflile(userId: string): Promise<UserProfile> {
     const response = await fetch(
-      `http://localhost:8000/api/userprofile/fetch?userId=${userId}`,
+      `${API_BASE_URL}/api/userprofile/fetch?userId=${userId}`,
       {
         method: "get",
         headers: {
@@ -142,7 +143,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
 
   async function fetchPostData(profileUserId: string) {
     const response = await fetch(
-      `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
+      `${API_BASE_URL}/api/userpost/profilepost?userId=${profileUserId}`,
       {
         method: "GET",
         headers: {
@@ -175,7 +176,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
     accountType: "public",
   });
   const openFollowerModal = async () => {
-    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollower?profileUserId=${profileUserId}`,{
+    const response=await fetch(`${API_BASE_URL}/api/follow/fetchUserFollower?profileUserId=${profileUserId}`,{
   method: "GET",
         headers: {
           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
@@ -204,7 +205,7 @@ const followerData=data.userFollower?.follower || [];
   };
 
   const openFollowingModal = async () => {
-    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollowing?profileUserId=${profileUserId}`,{
+    const response=await fetch(`${API_BASE_URL}/api/follow/fetchUserFollowing?profileUserId=${profileUserId}`,{
   method: "GET",
         headers: {
           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
@@ -325,7 +326,7 @@ useEffect(() => {
   (async () => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/follow/count?profileUserId=${profileUserId}`,
+        `${API_BASE_URL}/api/follow/count?profileUserId=${profileUserId}`,
         {
           method: "GET",
           headers: {
@@ -389,7 +390,7 @@ useEffect(() => {
             size={110}
             src={
               userDetails.profilePic
-                ? `http://localhost:8000${
+                ? `${API_BASE_URL}${
                     userDetails.profilePic
                   }?t=${Date.now()}`
                 : Default_User
