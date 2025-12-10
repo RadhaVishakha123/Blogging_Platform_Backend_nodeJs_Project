@@ -51,10 +51,12 @@ export  default  function UserProfile() {
     () => JSON.parse(localStorage.getItem("userFollowingData") ?? "[]")
   );
   const [FollowerCount, setFollowerCount] = useState<number>(0);
-const [FollowingCount, setFollowingCount] = useState<number>(0);
- const followRefresh = useRecoilValue(followRefreshAtom);
+  const [FollowingCount, setFollowingCount] = useState<number>(0);
+  const followRefresh = useRecoilValue(followRefreshAtom);
   const setfollowRefresh = useSetRecoilState(followRefreshAtom);
   const accessToken = currentLoggedInUserData?.accessToken ?? "";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
   const [userFollowerData, setUserFollowerData] = useState<UserFollower[]>(() =>
     JSON.parse(localStorage.getItem("userFollowerData") ?? "[]")
@@ -111,7 +113,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
     formData.append("bio", data.bio);
     formData.append("accountType", data.accountType);
     formData.append("profilePic", data.profilePic);
-    const response = await fetch("http://localhost:8000/api/userprofile/add", {
+    const response = await fetch(`${API_BASE_URL}/api/userprofile/add`, {
       method: "post",
       headers: {
         Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
@@ -128,7 +130,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
   // ---------------------------
   async function fetchUserProflile(userId: string): Promise<UserProfile> {
     const response = await fetch(
-      `http://localhost:8000/api/userprofile/fetch?userId=${userId}`,
+      `${API_BASE_URL}/api/userprofile/fetch?userId=${userId}`,
       {
         method: "get",
         headers: {
@@ -142,7 +144,7 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
 
   async function fetchPostData(profileUserId: string) {
     const response = await fetch(
-      `http://localhost:8000/api/userpost/profilepost?userId=${profileUserId}`,
+      `${API_BASE_URL}/api/userpost/profilepost?userId=${profileUserId}`,
       {
         method: "GET",
         headers: {
@@ -175,8 +177,8 @@ const [FollowingCount, setFollowingCount] = useState<number>(0);
     accountType: "public",
   });
   const openFollowerModal = async () => {
-    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollower?profileUserId=${profileUserId}`,{
-  method: "GET",
+    const response=await fetch(`${API_BASE_URL}/api/follow/fetchUserFollower?profileUserId=${profileUserId}`,{
+        method: "GET",
         headers: {
           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
         },
@@ -204,8 +206,8 @@ const followerData=data.userFollower?.follower || [];
   };
 
   const openFollowingModal = async () => {
-    const response=await fetch(`http://localhost:8000/api/follow/fetchUserFollowing?profileUserId=${profileUserId}`,{
-  method: "GET",
+    const response=await fetch(`${API_BASE_URL}/api/follow/fetchUserFollowing?profileUserId=${profileUserId}`,{
+        method: "GET",
         headers: {
           Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
         },
@@ -282,7 +284,7 @@ const followingData=data.userFollowing?.following ||[];
     if (!imageFile || profileUserId !== currentLoggedInUserData?.user.id)
       return;
     (async () => {
-     await addUserProfile({
+      await addUserProfile({
         fullName: userDetails?.fullName || "",
         bio: userDetails?.bio || "",
         profilePic: imageFile,
@@ -308,7 +310,7 @@ const followingData=data.userFollowing?.following ||[];
   }, [profileUserId,postRefresh]);
 
   useEffect(() => {
-   async function loadFollow() {
+    async function loadFollow() {
       const status = await checkIsFollowing(
         currentLoggedInUserData?.user.id,
         profileUserId,
@@ -319,31 +321,31 @@ const followingData=data.userFollowing?.following ||[];
     }
     loadFollow();
   }, [refreshFollow, profileUserId,followRefresh]);
-useEffect(() => {
-  if (!profileUserId) return;
+  useEffect(() => {
+    if (!profileUserId) return;
 
-  (async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:8000/api/follow/count?profileUserId=${profileUserId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
-          },
-        }
-      );
+    (async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/follow/count?profileUserId=${profileUserId}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+            },
+          }
+        );
 
-      const data = await response.json();
+        const data = await response.json();
 
-      setFollowerCount(data.followerCount || 0);
-      setFollowingCount(data.followingCount || 0);
+        setFollowerCount(data.followerCount || 0);
+        setFollowingCount(data.followingCount || 0);
 
-    } catch (error) {
+      } catch (error) {
       console.log("Follow count fetch error:", error);
-    }
-  })();
-}, [profileUserId, followRefresh]);
+      }
+    })();
+  }, [profileUserId, followRefresh]);
 
   // SAVE CHANGES
   async function saveChanges() {
@@ -366,7 +368,7 @@ useEffect(() => {
   if (!profileUserId) {
     return <div className="text-white text-center p-5">User not found</div>;
   }
-  
+
   async function handleFollowToggle() {
     setLoading(true);
     setfollowRefresh((p) => !p);
@@ -389,7 +391,7 @@ useEffect(() => {
             size={110}
             src={
               userDetails.profilePic
-                ? `http://localhost:8000${
+                ? `${API_BASE_URL}${
                     userDetails.profilePic
                   }?t=${Date.now()}`
                 : Default_User
@@ -454,7 +456,7 @@ useEffect(() => {
             }`}
             onClick={(e) => {
               e.stopPropagation();
-            handleFollowToggle();
+              handleFollowToggle();
             }}
           >
             {isFollowing ? "Unfollow" : "Follow"}
@@ -578,13 +580,13 @@ useEffect(() => {
           ) : (
             followList.map((item, index) => (
               <UserFollower_FollowingRow key={index} item={item}
-    currentUserId={currentLoggedInUserData?.user.id}
-    accessToken={accessToken}
-      onCancel={() => {
-          setIsFollowModalOpen(false);
-          setFollowList([]);
-        }}
-         />
+                currentUserId={currentLoggedInUserData?.user.id}
+                accessToken={accessToken}
+                onCancel={() => {
+                  setIsFollowModalOpen(false);
+                  setFollowList([]);
+                }}
+              />
               // <div
               //   key={index}
               //   className="flex justify-between items-center gap-3 mb-4"

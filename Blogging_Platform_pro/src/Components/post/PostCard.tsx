@@ -15,6 +15,8 @@ export default function PostCard({ post, onCommentClick }: any) {
   const accessToken=currentLoggedInUserData?.accessToken ?? "";
   const [isLiked, setIsLiked] = useState<boolean>(false);
 const [likeCount, setLikeCount] = useState<number>(0);
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   // --------------------------
   // SAFE DEFAULTS
   // --------------------------
@@ -23,9 +25,9 @@ const [likeCount, setLikeCount] = useState<number>(0);
      profilePic=Default_User;
   }
   else{
-   profilePic =`http://localhost:8000${post?.profilePic }`;
+   profilePic =`${API_BASE_URL}${post?.profilePic }`;
   }
-  const postImage = `http://localhost:8000${post.postImage}`;
+  const postImage = `${API_BASE_URL}${post.postImage}`;
   const fullName = post?.fullName ?? "Unknown User";
   const content = post?.content ?? "";
   const postId = post?._id ?? "";

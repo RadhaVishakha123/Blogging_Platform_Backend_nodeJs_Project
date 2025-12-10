@@ -13,6 +13,8 @@
     "@tailwindcss/vite": "^4.1.17",
     "antd": "^5.28.1",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.3",
+    "env-parse": "^1.0.5",
     "nanoid": "^5.1.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

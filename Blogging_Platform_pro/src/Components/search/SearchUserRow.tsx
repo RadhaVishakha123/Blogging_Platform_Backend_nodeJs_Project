@@ -11,6 +11,8 @@ export default function SearchUserRow({ user, currentUserId, accessToken, onClos
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const followRefresh=useRecoilValue( followRefreshAtom );
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const setfollowRefresh=useSetRecoilState(followRefreshAtom)
   useEffect(() => {
     async function loadFollow() {
@@ -50,7 +52,7 @@ const setfollowRefresh=useSetRecoilState(followRefreshAtom)
         }}
       >
         <img
-          src={user.profilePic ? `http://localhost:8000${user.profilePic}` : Default_User}
+          src={user.profilePic ? `${API_BASE_URL}${user.profilePic}` : Default_User}
           className="w-12 h-12 rounded-full object-cover border border-gray-600"
         />
         <div className="text-white">

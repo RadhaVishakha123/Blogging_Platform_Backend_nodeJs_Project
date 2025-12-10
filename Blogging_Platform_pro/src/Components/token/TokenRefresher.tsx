@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import useUser from '../../hooks/useUser';
 export default function TokenRefresher() {
     const {setCurrentLoggedInUserData,currentLoggedInUserData,loading,setLoading}=useUser();
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // atob(...)
 // atob decodes a base64 string to a normal string:
     function getTokenIssueTime(token: string) { 
@@ -14,7 +15,7 @@ export default function TokenRefresher() {
         let timeout: ReturnType<typeof setTimeout>;
         async function checkAuth() {
           try {
-            const res = await fetch("http://localhost:8000/api/auth/refresh", {
+            const res = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
               method: "POST",
               credentials: "include",
             });

@@ -19,6 +19,7 @@ export default function AuthLoginRegister() {
   const [userRegisterData, setUserRegisterData] = useState<User[]>(() => {
     return JSON.parse(localStorage.getItem("userRegisterData") ?? "[]") || [];
   });
+    const API_BASE_URL:any = import.meta.env.VITE_API_BASE_URL;
   const navigate = useNavigate();
   // User Register Function
   async function registerUser(data:any) {
@@ -38,7 +39,9 @@ export default function AuthLoginRegister() {
     //   message.success("Registration successful! Please log in.");
     //   return true;
     // }
-    const res=await fetch("http://localhost:8000/api/auth/register",{
+
+
+    const res=await fetch(`${API_BASE_URL}/api/auth/register`,{
       method:"POST",
       headers:{ "Content-Type": "application/json" },
       body:JSON.stringify(data)
@@ -58,7 +61,7 @@ export default function AuthLoginRegister() {
     // setCurrentLoggedInUserData(user);
     // return user;
     console.log("data in login api call send",data)
-const res=await fetch("http://localhost:8000/api/auth/login",{
+const res=await fetch(`${API_BASE_URL}/api/auth/login`,{
       method:"POST",
       credentials: "include",  
       headers:{ "Content-Type": "application/json" },
@@ -101,7 +104,7 @@ const res=await fetch("http://localhost:8000/api/auth/login",{
       }
     }
   };
-  useEffect(() => {
+useEffect(() => {
     localStorage.setItem("userRegisterData", JSON.stringify(userRegisterData));
   }, [userRegisterData]);
 useEffect(() => {

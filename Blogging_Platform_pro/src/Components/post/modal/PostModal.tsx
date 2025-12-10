@@ -15,6 +15,8 @@ export default function PostModal({
   const [caption, setCaption] = useState("");
   const message = App.useApp().message;
   const setPostRefresh=useSetRecoilState(postRefreshAtom)
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
  async function addPostData(postData: any) {
   const uid = currentLoggedInUserData?.user.id;
   if (!uid) return false;
@@ -23,7 +25,7 @@ export default function PostModal({
   formData.append("userId", uid);
   formData.append("content", postData.content);
   formData.append("postImage", postData.postImage);   // SAME NAME AS MULTER
-  const response = await fetch("http://localhost:8000/api/userpost", {
+  const response = await fetch(`${API_BASE_URL}/api/userpost`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,

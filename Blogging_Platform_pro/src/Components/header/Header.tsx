@@ -40,6 +40,8 @@ export default function Header() {
   //for follow. unfollow
   const [isFollowingState, setIsFollowingState] = useState(false);
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
   const accessToken = currentLoggedInUserData?.accessToken ?? "";
   const MenuItems = [
@@ -62,7 +64,7 @@ export default function Header() {
   async function handleLogout() {
     setCurrentLoggedInUserData(null);
     navigate("/");
-    const res = await fetch("http://localhost:8000/api/auth/logout", {
+    const res = await fetch(`${API_BASE_URL}/api/auth/logout`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -87,7 +89,7 @@ export default function Header() {
 
     const lowerQuery = searchText.toLowerCase();
     const mergedUsers = await fetch(
-      `http://localhost:8000/api/search?query=${lowerQuery}`,
+      `${API_BASE_URL}/api/search?query=${lowerQuery}`,
       {
         method: "GET",
         headers: {
@@ -270,13 +272,13 @@ export default function Header() {
             ) : (
               results.map((user: any) => (
                 <SearchUserRow
-                key={user.userId}
-    user={user}
-    currentUserId={currentLoggedInUserData?.user.id}
-    accessToken={accessToken}
-    onClose={() => {
-      setIsSlideOpen(false);
-      setQuery("");
+                  key={user.userId}
+                  user={user}
+                  currentUserId={currentLoggedInUserData?.user.id}
+                  accessToken={accessToken}
+                  onClose={() => {
+                    setIsSlideOpen(false);
+                    setQuery("");
     }}></SearchUserRow>
               ))
             )}

@@ -23,8 +23,8 @@ import type {
 
 export default function Home() {
   const { currentLoggedInUserData } = useUser();
-   if (!currentLoggedInUserData)
-  return <div className="text-white text-center p-5">Loading...</div>;
+  if (!currentLoggedInUserData)
+    return <div className="text-white text-center p-5">Loading...</div>;
   const accessToken=currentLoggedInUserData.accessToken;
   const [commentData, setCommentData] = useState<UserPostComment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,7 +38,7 @@ export default function Home() {
     setselectedPost(post);
     console.log("post data:",post);
     const comments = await fetchComments(post._id,accessToken); // fetch comments for this post
-     setCommentData(comments); // save to state
+    setCommentData(comments); // save to state
      console.log("home page comment data after the 2 :",commentData);
     setCommentText("");
     console.log()
@@ -49,53 +49,54 @@ export default function Home() {
   const [allPosts, setAllPosts] = useState<any[]>([]);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
   const [hasMore, setHasMore] = useState(true);
-  
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   const [userPostLikeData, setUserPostLikeData] = useState<UserPostLike[]>(
     () => {
       return JSON.parse(localStorage.getItem("userPostLikeData") ?? "[]") || [];
     }
   );
- 
+
   useEffect(() => {
     
   
-  (async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:8000/api/userpost/allpost",
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
-          },
-        }
-      );
+    (async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/userpost/allpost`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${currentLoggedInUserData?.accessToken}`,
+            },
+          }
+        );
 
-      const result = await response.json();
+        const result = await response.json();
 
-      // API returns { message, data: posts }
-      const merged = result.data || [];
+        // API returns { message, data: posts }
+        const merged = result.data || [];
 console.log("post data:",merged);
-      // Only public account posts
-      const publicPosts = merged.filter(
-        (p: any) => p.accountType === "public"
-      );
+        // Only public account posts
+        const publicPosts = merged.filter(
+          (p: any) => p.accountType === "public"
+        );
 
-      // Sort latest first
-      publicPosts.sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+        // Sort latest first
+        publicPosts.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
 
-      setAllPosts(publicPosts);
-      setVisiblePosts(publicPosts.slice(0, 5));
-      setHasMore(true);
-    } catch (err) {
-      console.log("Error fetching posts:", err);
-    }
-  })();
-}, [postRefresh]);
-const loadMore = () => {
+        setAllPosts(publicPosts);
+        setVisiblePosts(publicPosts.slice(0, 5));
+        setHasMore(true);
+      } catch (err) {
+        console.log("Error fetching posts:", err);
+      }
+    })();
+  }, [postRefresh]);
+  const loadMore = () => {
     if (visiblePosts.length >= allPosts.length) {
       setHasMore(false);
       return;
@@ -120,7 +121,7 @@ const loadMore = () => {
     );
     console.log("selected post id:",selectedPost.postId)
     const comments = await fetchComments(selectedPost._id,accessToken); // fetch comments for this post
-      setCommentData(comments); // save to state
+    setCommentData(comments); // save to state
       console.log("home page comment data after the ",commentData);
     setIsModalOpen(false);
   }
