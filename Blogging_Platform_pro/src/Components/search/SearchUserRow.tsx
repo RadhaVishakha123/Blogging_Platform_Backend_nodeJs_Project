@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { followRefreshAtom } from "../../recoil/atoms/followRefreshAtom";
 import { useRecoilValue } from "recoil";
 import { useSetRecoilState } from "recoil";
+import { API_BASE_URL } from "../../config";
 export default function SearchUserRow({ user, currentUserId, accessToken, onClose }:any) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ const setfollowRefresh=useSetRecoilState(followRefreshAtom)
         }}
       >
         <img
-          src={user.profilePic ? `http://localhost:8000${user.profilePic}` : Default_User}
+          src={user.profilePic ? `${API_BASE_URL}${user.profilePic}` : Default_User}
           className="w-12 h-12 rounded-full object-cover border border-gray-600"
         />
         <div className="text-white">

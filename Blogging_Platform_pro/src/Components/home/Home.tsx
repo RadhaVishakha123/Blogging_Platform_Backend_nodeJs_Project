@@ -5,6 +5,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useRecoilValue } from "recoil";
 import { postRefreshAtom } from "../../recoil/atoms/postRefreshAtom";
 import { App } from "antd";
+import { API_BASE_URL } from "../../config";
 import {
   postLikeCount,
   getUserDetails,
@@ -62,7 +63,7 @@ export default function Home() {
   (async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/userpost/allpost",
+        `${API_BASE_URL}/api/userpost/allpost`,
         {
           method: "GET",
           headers: {
