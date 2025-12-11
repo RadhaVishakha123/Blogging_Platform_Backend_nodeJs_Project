@@ -15,7 +15,7 @@ let userProfile= await UserProfile.findOne({userId});
       if (userProfile.profilePic) {
         const oldImagePath = path.join(
           __dirname,
-          "..",
+          "..","..",
           userProfile.profilePic
         );
 
