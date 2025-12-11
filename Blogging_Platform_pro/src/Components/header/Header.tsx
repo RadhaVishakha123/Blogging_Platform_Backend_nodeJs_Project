@@ -285,7 +285,7 @@ export default function Header() {
         )}
       </Drawer>
 
-      <PostModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} />
+      <PostModal isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen} mode="create" postData="" />
     </>
   );
 }

@@ -15,6 +15,8 @@ export interface UserContextInterface {
 export type PostPopupProps = {
   isModalOpen: boolean;
   setIsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  mode:string,
+  postData:any
 };
 
 //user profile types
