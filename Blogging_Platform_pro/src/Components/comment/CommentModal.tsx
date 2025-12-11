@@ -4,6 +4,7 @@ import { getUserDetails, formatPostDate } from "../../Helper/utility";
 import useUser from "../../hooks/useUser";
 import { useEffect, useState } from "react";
 import { useDebounce } from "use-debounce";
+import { API_BASE_URL } from "../../config";
 export default function CommentModal({
   isOpen,
   onClose,
@@ -75,7 +76,7 @@ const [debouncedComment] = useDebounce(commentText, 500);
                 <Avatar
                   src={
                     item.user?.profilePic
-                      ? `http://localhost:8000${item.user.profilePic}`
+                      ? `${API_BASE_URL}${item.user.profilePic}`
                       : Default_User
                   }
                   size={40}
